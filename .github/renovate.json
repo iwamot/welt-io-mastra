@@ -1,4 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>iwamot/renovate-config#v0.15.0"]
+  "extends": ["github>iwamot/renovate-config#v0.15.0"],
+  "packageRules": [
+    {
+      "description": "Mastra sends AI SDK v7 (LanguageModelV4) providers flat file parts, which drop image/document input on the wire — keep the v6 line until mastra-ai/mastra#19298 is fixed.",
+      "matchPackageNames": ["@ai-sdk/amazon-bedrock"],
+      "allowedVersions": "<5"
+    }
+  ]
 }

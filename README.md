@@ -1,48 +1,64 @@
-# repo-template
+# @welt-io/mastra
 
-Starter template for repositories in iwamot's ecosystem.
+[![npm](https://img.shields.io/npm/v/%40welt-io%2Fmastra.svg)](https://www.npmjs.com/package/@welt-io/mastra)
+[![node](https://img.shields.io/node/v/%40welt-io%2Fmastra.svg)](https://www.npmjs.com/package/@welt-io/mastra)
 
-## Files
+The [Mastra](https://mastra.ai/) (TypeScript) adapter for [Welt](https://github.com/iwamot/welt)'s wire contract — one of Welt's [agent-side adapters](https://github.com/iwamot/welt#agent-side-adapters).
 
-| Path | Purpose |
-|------|---------|
-| `.github/Oidefile` | Manifest of files this template distributes. `oide.yml` pulls every listed path into derived repos. |
-| `.github/release.yml` | GitHub auto-generated release notes categorization (Features / Dependencies). |
-| `.github/renovate.json` | Extends the `iwamot/renovate-config` preset. |
-| `.github/workflows/auto-label.yml` | Labels PRs from their Conventional Commit title. |
-| `.github/workflows/dco.yml` | Checks that every PR commit carries a DCO sign-off. |
-| `.github/workflows/dependabot-auto-merge.yml` | Auto-merges Dependabot PRs. |
-| `.github/workflows/dependency-review.yml` | Vulnerability and license review on PRs. |
-| `.github/workflows/oide.yml` | Pulls the files listed in `.github/Oidefile` from this template. See [Staying in sync](#staying-in-sync). |
-| `.github/workflows/release.yml` | Creates a GitHub Release when a `v*` tag is pushed. |
-| `.github/workflows/renovate.yml` | Self-hosted Renovate runner (hourly + on push to main). |
-| `.github/workflows/validate.yml` | Runs `validate.sh` on push and PR via `iwamot/workflows`. |
-| `CONTRIBUTING.md` | Contribution guide: local setup, DCO, and Conventional Commits. |
-| `LICENSE` | Project license. |
-| `SECURITY.md` | Minimal security policy. Directs vulnerability reports to GitHub Security Advisories. |
-| `mise.toml` | Pins mise minimum version and includes shared tasks from `iwamot/mise-tasks`. |
-| `validate.sh` | Lint entry point invoked by `iwamot/actions/mise-validate`. Add repo-specific lint at the marked location. |
+## Install
 
-## Staying in sync
+```bash
+npm install @welt-io/mastra
+```
 
-This template owns the shared governance files — the paths listed in `.github/Oidefile`. Derived repositories track it through two automated flows:
+## Usage
 
-- **Governance files** — `.github/workflows/oide.yml` runs [`iwamot/oide`](https://github.com/iwamot/oide), which pulls every path listed in `.github/Oidefile` from this template and opens a PR. Its `TEMPLATE_VERSION` pin is tracked by Renovate, so tagging a new template release bumps the pin, which triggers the pull. `.github/Oidefile` lists itself, so adding a path to the template's manifest propagates to every derived repo in one pull.
-- **Version pins** — Renovate keeps the action SHAs in `.github/workflows/*.yml` and the task ref in `mise.toml` current.
+See [`examples/agent`](examples/agent) — the smallest complete agent built on this package (text streaming, tool use, file output, file input, and a human-approval tool). The sections below explain the adapters it wires in.
 
-## Post-creation setup
+## API
 
-After clicking **Use this template**:
+The wire between Welt and the agent is JSON, and its contract is defined by [Welt's docs](https://github.com/iwamot/welt#features) — plain Mastra values do not fit it in either direction. Each function below adapts one piece:
 
-1. **Replace this README.md** with the new repository's own description.
-2. **Install the Renovate App** (or your self-hosted equivalent) for the new repo.
-3. **Create a GitHub Environment** for Renovate (default name: `production`, override via the `environment` input on `renovate.yml` if needed) and add environment-scoped secrets:
-   - `RENOVATE_APP_CLIENT_ID`
-   - `RENOVATE_APP_PRIVATE_KEY`
-4. **Add a release workflow** if the repo ships artifacts. These also take an `environment` input — create additional environments as needed:
-   - `iwamot/workflows/.github/workflows/release-ghcr.yml` for GHCR
-   - `iwamot/workflows/.github/workflows/release-ecr-public.yml` for ECR Public
-   - `iwamot/workflows/.github/workflows/release-homebrew-tap.yml` for Homebrew tap
-5. **Add language-specific files** as needed: `Dockerfile`, `package.json`, `pyproject.toml`, `.gitignore`, etc.
-6. **Extend `validate.sh`** with repo-specific lint (e.g. `mise run docker-lint Dockerfile`, language linters).
-7. **Review `mise.toml`'s `min_version`**: the template provides a default, but the minimum mise version is each repository's own decision. Bump it if your tasks require a newer feature, or drop it if no constraint is needed. This is *not* auto-bumped by Renovate.
+### Inbound
+
+`decodeMessages(messages)` turns Welt's Converse-shaped messages (built from the Slack thread, file bytes base64-encoded) into the AI SDK model messages `Agent.stream()` consumes: text blocks become text parts, image blocks image parts, and document and video blocks file parts, each with the media type Mastra expects in place of the Converse format token. Malformed entries are skipped.
+
+`decodeInterruptResponses(responses)` turns Welt's resume payload — a plain mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
+
+### Outbound
+
+`renderableEvents(chunks)` reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStream` — whose shapes Welt does not render — to the events Welt renders: text chunks (`data`), tool-use indicators (`current_tool_use` / `tool_result`, slimmed so tool output stays off the wire), generated files (`file`, a filename plus base64 bytes for each file part the model produces, which Welt uploads to the Slack thread — see [Welt's Files doc](https://github.com/iwamot/welt/blob/main/docs/files.md) for size limits and rendering), and failures (`error`). A stream that stops for human input ends with one `interrupt` event per suspended tool call, which Welt renders as buttons in the Slack thread; agents that do not suspend see no change. Two suspension flavors map:
+
+- An explicit `suspend(...)` in a tool passes its suspend payload through as the interrupt reason unmodified — build it with `interruptReason` below to control the widgets. Declare `resumeSchema: z.string()` on the tool: the human's answer comes back as the resume data.
+- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason with **Approve** / **Deny** buttons whose `y` / `n` answer the host app maps to `approveToolCall` / `declineToolCall`.
+
+`fileEvent(name, data)` builds the same `file` event from a filename and raw bytes, for attaching arbitrary files of your own — yield it from the host app alongside the reduced stream, or write it to the tool execution context's stream writer to attach a file from inside a tool, which `renderableEvents` passes through by itself:
+
+```ts
+await context.writer.write(fileEvent("report.csv", csvBytes));
+```
+
+`interruptReason(message, options, input)` builds the reason shape Welt renders as a message with the specified widgets, both specs being the wire's own shapes: buttons (`options`, one entry per button — a required `value`, an optional `label`, an optional `style` of `"primary"` or `"danger"`), a free-text field whose submitted text becomes the answer (`input` — an optional `label` and `multiline`), or both — whichever answer comes first settles the question. Omitted fields keep Welt's defaults; building the shape through this helper turns a typo into an immediate `TypeError` instead of a silent fallback to Welt's default rendering:
+
+```ts
+await context.agent.suspend(
+  interruptReason(
+    "Deploy to prod?",
+    [
+      { value: "y", label: "Deploy", style: "primary" },
+      { value: "n", label: "Cancel" },
+    ],
+    { label: "Or tell me what to do instead" },
+  ),
+);
+```
+
+[Welt's Interrupts doc](https://github.com/iwamot/welt/blob/main/docs/interrupts.md) covers the whole round trip: the reason contract, who can press, multiple interrupts, and expiry.
+
+## Supported Versions
+
+Welt releases first; @welt-io/mastra follows, mirroring the minor version. While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y — other combinations may work, but come with no guarantee.
+
+## License
+
+MIT

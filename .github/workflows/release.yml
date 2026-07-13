@@ -2,13 +2,29 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*.*.*']
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
-    uses: iwamot/workflows/.github/workflows/release-only.yml@086f2d88815451da2cba7dc9e6e044d86c66743c # v8.2.0
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
     permissions:
-      contents: write  # to create the GitHub Release
+      contents: write  # to manage the GitHub Release lifecycle
+      id-token: write  # for npm Trusted Publishing OIDC
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: iwamot/actions/release-draft@dbe39b23ea600743e3fbb619d775ce08c61f753f # v2.0.1
+      - uses: iwamot/actions/npm-publish@dbe39b23ea600743e3fbb619d775ce08c61f753f # v2.0.1
+      - uses: iwamot/actions/release-publish@dbe39b23ea600743e3fbb619d775ce08c61f753f # v2.0.1
