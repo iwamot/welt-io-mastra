@@ -4,16 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-time:
-  '@ai-sdk/amazon-bedrock@4.0.133': 2026-07-10T14:13:29.388Z
-  '@aws-sdk/credential-providers@3.1081.0': 2026-07-07T18:55:46.186Z
-  '@mastra/core@1.50.1': 2026-07-07T22:50:13.958Z
-  '@types/bun@1.3.14': 2026-05-13T05:15:33.890Z
-  '@types/node@24.13.2': 2026-06-10T22:15:29.361Z
-  bedrock-agentcore@0.4.0: 2026-06-30T21:45:42.820Z
-  typescript@6.0.3: 2026-04-16T23:38:27.905Z
-  zod@4.4.3: 2026-05-04T07:06:40.819Z
-
 importers:
 
   .:
@@ -91,32 +81,23 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils-v5@3.0.25':
-    resolution: {integrity: sha512-CvsRu+32Y8a167s+lrIBtsybvgTHp8j9y+6BeTvLeoW3Q+okw/b4CnNUFOLIXsRaKHQKAH+IHNJPYWywfpw0LA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-    aliasOf: '@ai-sdk/provider-utils'
-
-  '@ai-sdk/provider-utils-v6@4.0.27':
-    resolution: {integrity: sha512-ubkAJ+xODouwtmN1tYlvTPphH1hPOBfZaEQe8U7skGvFAnIRs9PPpsq57bC2+Ky/MB4yzhd6YOsxTAx9sGpazw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-    aliasOf: '@ai-sdk/provider-utils'
-
-  '@ai-sdk/provider-utils-v7@5.0.0':
-    resolution: {integrity: sha512-zj66M02jc6ASYwIgWZowsooDUwaVngeNZQ3H10GwcPMZ+KR6gHMhcUuKl6tkai+JPXTKDyHY1pnszuxRtw2D4A==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-    aliasOf: '@ai-sdk/provider-utils'
-
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.23.8
+
+  '@ai-sdk/provider-utils@3.0.25':
+    resolution: {integrity: sha512-CvsRu+32Y8a167s+lrIBtsybvgTHp8j9y+6BeTvLeoW3Q+okw/b4CnNUFOLIXsRaKHQKAH+IHNJPYWywfpw0LA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@4.0.27':
+    resolution: {integrity: sha512-ubkAJ+xODouwtmN1tYlvTPphH1hPOBfZaEQe8U7skGvFAnIRs9PPpsq57bC2+Ky/MB4yzhd6YOsxTAx9sGpazw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider-utils@4.0.38':
     resolution: {integrity: sha512-/HHGmtKllqjg1OLc023v9w9kK3laW7Z6TzfZukYQWCsGBbzB9p60zTvvpXFVcs44NZBVXL3viOa1HRKUbeee8g==}
@@ -124,20 +105,11 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-v5@2.0.3':
-    resolution: {integrity: sha512-h88OPkavHTiN9tMn2l5awAznGB0lXzjcLhgR1/rvjB2zlLprsNxbM2tt6OJsHUxduLC3klq0/eqaSf6fX5XVww==}
-    engines: {node: '>=18'}
-    aliasOf: '@ai-sdk/provider'
-
-  '@ai-sdk/provider-v6@3.0.10':
-    resolution: {integrity: sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw==}
-    engines: {node: '>=18'}
-    aliasOf: '@ai-sdk/provider'
-
-  '@ai-sdk/provider-v7@4.0.0':
-    resolution: {integrity: sha512-fr9Gs89prDWiuox/T+kCA+i2cJkHpxU5S+tr4megjTzRC27ZsvFhwjU/+XrqqMbvBUlfmXxTOYWy8ng45dsjIg==}
+  '@ai-sdk/provider-utils@5.0.0':
+    resolution: {integrity: sha512-zj66M02jc6ASYwIgWZowsooDUwaVngeNZQ3H10GwcPMZ+KR6gHMhcUuKl6tkai+JPXTKDyHY1pnszuxRtw2D4A==}
     engines: {node: '>=22'}
-    aliasOf: '@ai-sdk/provider'
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider@1.1.3':
     resolution: {integrity: sha512-qZMxYJ0qqX/RfnuIaab+zp8UAeJn/ygXXAffR5I4N0n1IrvA6qBsjc8hXLmBiMV2zoXlifkacF7sEFnYnjBcqg==}
@@ -159,12 +131,11 @@ packages:
     resolution: {integrity: sha512-fr9Gs89prDWiuox/T+kCA+i2cJkHpxU5S+tr4megjTzRC27ZsvFhwjU/+XrqqMbvBUlfmXxTOYWy8ng45dsjIg==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/ui-utils-v5@1.2.11':
+  '@ai-sdk/ui-utils@1.2.11':
     resolution: {integrity: sha512-3zcwCc8ezzFlwp3ZD15wAPjf2Au4s3vAbKsXQVyhxODHcmu0iyPO2Eua6D/vicq/AUm/BAo60r97O6HU+EI0+w==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.23.8
-    aliasOf: '@ai-sdk/ui-utils'
 
   '@aws-crypto/crc32@3.0.0':
     resolution: {integrity: sha512-IzSgsrxUcsrejQbPVilIKy16kAT52EwB6zSaI+M3xxIhKh5+aldEyvI+z6erM7TCLB2BJsFrtHjp6/4/sr+3dA==}
@@ -242,6 +213,7 @@ packages:
   '@aws-sdk/protocol-http@3.374.0':
     resolution: {integrity: sha512-9WpRUbINdGroV3HiZZIBoJvL2ndoWk39OfwxWs2otxByppJZNN14bg/lvCx5e8ggHUti7IBk5rb0nqQZ4m05pg==}
     engines: {node: '>=14.0.0'}
+    deprecated: This package has moved to @smithy/protocol-http
 
   '@aws-sdk/signature-v4-multi-region@3.996.39':
     resolution: {integrity: sha512-8+srXqYIF8KYMLC4FxMLEM5Ek7kUNibJu1R4m8/fUhhNYIZZz26oGtKkCr8I/HiG2fFQxBvaGgQZT4/mqRCSnA==}
@@ -250,6 +222,7 @@ packages:
   '@aws-sdk/signature-v4@3.374.0':
     resolution: {integrity: sha512-2xLJvSdzcZZAg0lsDLUAuSQuihzK0dcxIK7WmfuJeF7DGKJFmp9czQmz5f3qiDz6IDQzvgK1M9vtJSVCslJbyQ==}
     engines: {node: '>=14.0.0'}
+    deprecated: This package has moved to @smithy/signature-v4
 
   '@aws-sdk/token-providers@3.1083.0':
     resolution: {integrity: sha512-s0woKnxuHrExLc5L2ArIH5BMkbonHPtt+5hSBM8oknp9M6QTuUmmAmJ2E0EdzCGONrO+8+ADPqvv6UX0nNcc7A==}
@@ -613,6 +586,8 @@ packages:
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
     peerDependenciesMeta:
       supports-color:
         optional: true
@@ -1393,9 +1368,8 @@ packages:
     resolution: {integrity: sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==}
     engines: {node: '>=18'}
 
-  zod-from-json-schema-v3@0.0.5:
+  zod-from-json-schema@0.0.5:
     resolution: {integrity: sha512-zYEoo86M1qpA1Pq6329oSyHLS785z/mTwfr9V1Xf/ZLhuuBGaMlDGu/pDVGVUe4H4oa1EFgWZT53DP0U3oT9CQ==}
-    aliasOf: zod-from-json-schema
 
   zod-from-json-schema@0.5.4:
     resolution: {integrity: sha512-l+XRdV8YZAolpJSXDk3kSEam1W0knpSj7vvbA0laOzJyGV7vhmKFqgfl815VePvp2vhPOhbgo4pMtuYKXqkv9w==}
@@ -1416,9 +1390,8 @@ packages:
 
 snapshots:
 
-  '@a2a-js/sdk@0.3.14(express@5.2.1)':
+  '@a2a-js/sdk@0.3.14':
     dependencies:
-      express: 5.2.1
       uuid: 11.1.1
 
   '@ai-sdk/amazon-bedrock@4.0.133(zod@4.4.3)':
@@ -1444,33 +1417,25 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.38(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils-v5@3.0.25(zod@4.4.3)':
+  '@ai-sdk/provider-utils@2.2.8(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.3
+      nanoid: 3.3.16
+      secure-json-parse: 2.7.0
+      zod: 4.4.3
+
+  '@ai-sdk/provider-utils@3.0.25(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 2.0.3
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils-v6@4.0.27(zod@4.4.3)':
+  '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
-      zod: 4.4.3
-
-  '@ai-sdk/provider-utils-v7@5.0.0(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.0
-      '@standard-schema/spec': 1.1.0
-      '@workflow/serde': 4.1.0
-      eventsource-parser: 3.1.0
-      zod: 4.4.3
-
-  '@ai-sdk/provider-utils@2.2.8(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 1.1.3
-      nanoid: 3.3.16
-      secure-json-parse: 2.7.0
       zod: 4.4.3
 
   '@ai-sdk/provider-utils@4.0.38(zod@4.4.3)':
@@ -1480,17 +1445,13 @@ snapshots:
       eventsource-parser: 3.1.0
       zod: 4.4.3
 
-  '@ai-sdk/provider-v5@2.0.3':
+  '@ai-sdk/provider-utils@5.0.0(zod@4.4.3)':
     dependencies:
-      json-schema: 0.4.0
-
-  '@ai-sdk/provider-v6@3.0.10':
-    dependencies:
-      json-schema: 0.4.0
-
-  '@ai-sdk/provider-v7@4.0.0':
-    dependencies:
-      json-schema: 0.4.0
+      '@ai-sdk/provider': 4.0.0
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      zod: 4.4.3
 
   '@ai-sdk/provider@1.1.3':
     dependencies:
@@ -1512,7 +1473,7 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/ui-utils-v5@1.2.11(zod@4.4.3)':
+  '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@4.4.3)
@@ -1752,7 +1713,7 @@ snapshots:
 
   '@aws/lambda-invoke-store@0.3.0': {}
 
-  '@fastify/ajv-compiler@4.0.5(ajv@8.20.0)':
+  '@fastify/ajv-compiler@4.0.5':
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
@@ -1760,9 +1721,9 @@ snapshots:
 
   '@fastify/error@4.2.0': {}
 
-  '@fastify/fast-json-stringify-compiler@5.1.0(ajv@8.20.0)':
+  '@fastify/fast-json-stringify-compiler@5.1.0':
     dependencies:
-      fast-json-stringify: 7.0.1(ajv@8.20.0)
+      fast-json-stringify: 7.0.1
 
   '@fastify/forwarded@3.0.1': {}
 
@@ -1777,7 +1738,7 @@ snapshots:
 
   '@fastify/sse@0.4.0(fastify@5.10.0)':
     dependencies:
-      fastify: 5.10.0(ajv@8.20.0)
+      fastify: 5.10.0
       fastify-plugin: 5.1.0
 
   '@fastify/websocket@11.3.0':
@@ -1785,6 +1746,9 @@ snapshots:
       duplexify: 4.1.3
       fastify-plugin: 6.0.0
       ws: 8.21.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@hono/node-server@1.19.14(hono@4.12.29)':
     dependencies:
@@ -1800,14 +1764,14 @@ snapshots:
 
   '@mastra/core@1.50.1(zod@4.4.3)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14(express@5.2.1)
-      '@ai-sdk/provider-utils-v5': 3.0.25(zod@4.4.3)
-      '@ai-sdk/provider-utils-v6': 4.0.27(zod@4.4.3)
-      '@ai-sdk/provider-utils-v7': 5.0.0(zod@4.4.3)
-      '@ai-sdk/provider-v5': 2.0.3
-      '@ai-sdk/provider-v6': 3.0.10
-      '@ai-sdk/provider-v7': 4.0.0
-      '@ai-sdk/ui-utils-v5': 1.2.11(zod@4.4.3)
+      '@a2a-js/sdk': 0.3.14
+      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@4.4.3)'
+      '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)'
+      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.0(zod@4.4.3)'
+      '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
+      '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.10'
+      '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.0'
+      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.3(zod@4.4.3)
@@ -1833,13 +1797,23 @@ snapshots:
       ws: 8.21.0
       xxhash-wasm: 1.1.0
       zod: 4.4.3
+    transitivePeerDependencies:
+      - '@bufbuild/protobuf'
+      - '@cfworker/json-schema'
+      - '@grpc/grpc-js'
+      - ai
+      - bufferutil
+      - express
+      - rxjs
+      - supports-color
+      - utf-8-validate
 
   '@mastra/schema-compat@1.3.3(zod@4.4.3)':
     dependencies:
       json-schema-to-zod: 2.8.1
       zod: 4.4.3
       zod-from-json-schema: 0.5.4
-      zod-from-json-schema-v3: 0.0.5
+      zod-from-json-schema-v3: zod-from-json-schema@0.0.5
       zod-to-json-schema: 3.25.2(zod@4.4.3)
 
   '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
@@ -1861,6 +1835,8 @@ snapshots:
       raw-body: 3.0.2
       zod: 4.4.3
       zod-to-json-schema: 3.25.2(zod@4.4.3)
+    transitivePeerDependencies:
+      - supports-color
 
   '@pinojs/redact@0.4.0': {}
 
@@ -2075,9 +2051,12 @@ snapshots:
       '@smithy/signature-v4': 5.6.4
       '@smithy/util-utf8': 4.4.8
       '@types/ws': 8.18.1
-      fastify: 5.10.0(ajv@8.20.0)
+      fastify: 5.10.0
       ws: 8.21.0
       zod: 4.4.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   body-parser@2.3.0:
     dependencies:
@@ -2090,6 +2069,8 @@ snapshots:
       qs: 6.15.3
       raw-body: 3.0.2
       type-is: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
 
   bowser@2.14.1: {}
 
@@ -2123,6 +2104,8 @@ snapshots:
       remend: 1.3.0
       unified: 11.0.5
       zod: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
 
   content-disposition@1.1.0: {}
 
@@ -2260,6 +2243,8 @@ snapshots:
       statuses: 2.0.2
       type-is: 2.1.0
       vary: 1.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   extend-shallow@2.0.1:
     dependencies:
@@ -2271,7 +2256,7 @@ snapshots:
 
   fast-deep-equal@3.1.3: {}
 
-  fast-json-stringify@7.0.1(ajv@8.20.0):
+  fast-json-stringify@7.0.1:
     dependencies:
       '@fastify/merge-json-schemas': 0.2.1
       ajv: 8.20.0
@@ -2292,15 +2277,15 @@ snapshots:
 
   fastify-plugin@6.0.0: {}
 
-  fastify@5.10.0(ajv@8.20.0):
+  fastify@5.10.0:
     dependencies:
-      '@fastify/ajv-compiler': 4.0.5(ajv@8.20.0)
+      '@fastify/ajv-compiler': 4.0.5
       '@fastify/error': 4.2.0
-      '@fastify/fast-json-stringify-compiler': 5.1.0(ajv@8.20.0)
+      '@fastify/fast-json-stringify-compiler': 5.1.0
       '@fastify/proxy-addr': 5.1.0
       abstract-logging: 2.0.1
       avvio: 9.2.0
-      fast-json-stringify: 7.0.1(ajv@8.20.0)
+      fast-json-stringify: 7.0.1
       find-my-way: 9.6.0
       light-my-request: 6.6.0
       pino: 10.3.1
@@ -2326,6 +2311,8 @@ snapshots:
       on-finished: 2.4.1
       parseurl: 1.3.3
       statuses: 2.0.2
+    transitivePeerDependencies:
+      - supports-color
 
   find-my-way@9.6.0:
     dependencies:
@@ -2475,6 +2462,8 @@ snapshots:
       micromark-util-symbol: 2.0.1
       micromark-util-types: 2.0.2
       unist-util-stringify-position: 4.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-gfm-autolink-literal@2.0.1:
     dependencies:
@@ -2491,12 +2480,16 @@ snapshots:
       mdast-util-from-markdown: 2.0.3
       mdast-util-to-markdown: 2.1.2
       micromark-util-normalize-identifier: 2.0.1
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-gfm-strikethrough@2.0.0:
     dependencies:
       '@types/mdast': 4.0.4
       mdast-util-from-markdown: 2.0.3
       mdast-util-to-markdown: 2.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-gfm-table@2.0.0:
     dependencies:
@@ -2505,6 +2498,8 @@ snapshots:
       markdown-table: 3.0.4
       mdast-util-from-markdown: 2.0.3
       mdast-util-to-markdown: 2.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-gfm-task-list-item@2.0.0:
     dependencies:
@@ -2512,6 +2507,8 @@ snapshots:
       devlop: 1.1.0
       mdast-util-from-markdown: 2.0.3
       mdast-util-to-markdown: 2.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-gfm@3.1.0:
     dependencies:
@@ -2522,6 +2519,8 @@ snapshots:
       mdast-util-gfm-table: 2.0.0
       mdast-util-gfm-task-list-item: 2.0.0
       mdast-util-to-markdown: 2.1.2
+    transitivePeerDependencies:
+      - supports-color
 
   mdast-util-phrasing@4.1.0:
     dependencies:
@@ -2736,6 +2735,8 @@ snapshots:
       micromark-util-subtokenize: 2.1.0
       micromark-util-symbol: 2.0.1
       micromark-util-types: 2.0.2
+    transitivePeerDependencies:
+      - supports-color
 
   mime-db@1.54.0: {}
 
@@ -2859,6 +2860,8 @@ snapshots:
       remark-parse: 11.0.0
       remark-stringify: 11.0.0
       unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   remark-parse@11.0.0:
     dependencies:
@@ -2866,6 +2869,8 @@ snapshots:
       mdast-util-from-markdown: 2.0.3
       micromark-util-types: 2.0.2
       unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   remark-stringify@11.0.0:
     dependencies:
@@ -2890,6 +2895,8 @@ snapshots:
       is-promise: 4.0.0
       parseurl: 1.3.3
       path-to-regexp: 8.4.2
+    transitivePeerDependencies:
+      - supports-color
 
   safe-buffer@5.2.1: {}
 
@@ -2925,6 +2932,8 @@ snapshots:
       on-finished: 2.4.1
       range-parser: 1.3.0
       statuses: 2.0.2
+    transitivePeerDependencies:
+      - supports-color
 
   serve-static@2.2.1:
     dependencies:
@@ -2932,6 +2941,8 @@ snapshots:
       escape-html: 1.0.3
       parseurl: 1.3.3
       send: 1.2.1
+    transitivePeerDependencies:
+      - supports-color
 
   set-cookie-parser@2.7.2: {}
 
@@ -3080,7 +3091,7 @@ snapshots:
 
   yoctocolors@2.1.2: {}
 
-  zod-from-json-schema-v3@0.0.5:
+  zod-from-json-schema@0.0.5:
     dependencies:
       zod: 3.25.76
 
