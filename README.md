@@ -17,28 +17,56 @@ See [`examples/agent`](examples/agent) — the smallest complete agent built on 
 
 ## API
 
-The wire between Welt and the agent is JSON, and its contract is defined by [Welt's docs](https://github.com/iwamot/welt#features) — plain Mastra values do not fit it in either direction. Each function below adapts one piece:
+The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, three the outbound stream.
 
 ### Inbound
 
-`decodeMessages(messages)` turns Welt's Converse-shaped messages (built from the Slack thread, file bytes base64-encoded) into the AI SDK model messages `Agent.stream()` consumes: text blocks become text parts, image blocks image parts, and document and video blocks file parts, each with the media type Mastra expects in place of the Converse format token. Malformed entries are skipped.
+#### `decodeMessages(messages)`
 
-`decodeInterruptResponses(responses)` turns Welt's resume payload — a plain mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
+Turns Welt's Converse-shaped messages — built from the Slack thread, file bytes base64-encoded — into the AI SDK model messages `Agent.stream()` consumes:
+
+| Converse block | Model message part |
+|---|---|
+| Text | Text |
+| Image | Image |
+| Document / video | File |
+
+Each file-carrying part gets the media type Mastra expects in place of the Converse format token. Malformed entries are skipped.
+
+#### `decodeInterruptResponses(responses)`
+
+Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
 
 ### Outbound
 
-`renderableEvents(chunks)` reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStream` — whose shapes Welt does not render — to the events Welt renders: text chunks (`data`), tool-use indicators (`current_tool_use` / `tool_result`, slimmed so tool output stays off the wire), generated files (`file`, a filename plus base64 bytes for each file part the model produces, which Welt uploads to the Slack thread — see [Welt's Files doc](https://github.com/iwamot/welt/blob/main/docs/files.md) for size limits and rendering), and failures (`error`). A stream that stops for human input ends with one `interrupt` event per suspended tool call, which Welt renders as buttons in the Slack thread; agents that do not suspend see no change. Two suspension flavors map:
+#### `renderableEvents(chunks)`
+
+Reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStream` — whose shapes Welt does not render — to the events Welt renders:
+
+| Mastra emits | On the wire | In the Slack thread |
+|---|---|---|
+| Text deltas | `data` | The streamed reply |
+| Tool calls and results | `current_tool_use` / `tool_result` | "Using tool" indicators (tool output stays off the wire) |
+| File parts the model produces | `file` | An uploaded file ([size limits](https://github.com/iwamot/welt/blob/main/docs/wire.md#limits)) |
+| Failures | `error` | A reply failure notice |
+| Suspended tool calls | `interrupt` | Buttons and/or a text field |
+
+A run that stops for human input ends its stream with one `interrupt` event per suspended tool call; agents that do not suspend see no change. Two suspension flavors map:
 
 - An explicit `suspend(...)` in a tool passes its suspend payload through as the interrupt reason unmodified — build it with `interruptReason` below to control the widgets. Declare `resumeSchema: z.string()` on the tool: the human's answer comes back as the resume data.
 - A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason with **Approve** / **Deny** buttons whose `y` / `n` answer the host app maps to `approveToolCall` / `declineToolCall`.
 
-`fileEvent(name, data)` builds the same `file` event from a filename and raw bytes, for attaching arbitrary files of your own — yield it from the host app alongside the reduced stream, or write it to the tool execution context's stream writer to attach a file from inside a tool, which `renderableEvents` passes through by itself:
+#### `fileEvent(name, data)`
+
+Builds the same `file` event from a filename and raw bytes, for attaching arbitrary files of your own. Yield it from the host app alongside the reduced stream, or write it to the tool execution context's stream writer to attach a file from inside a tool — `renderableEvents` passes it through by itself:
 
 ```ts
 await context.writer.write(fileEvent("report.csv", csvBytes));
 ```
 
-`interruptReason(message, options, input)` builds the reason shape Welt renders as a message with the specified widgets, both specs being the wire's own shapes: buttons (`options`, one entry per button — a required `value`, an optional `label`, an optional `style` of `"primary"` or `"danger"`), a free-text field whose submitted text becomes the answer (`input` — an optional `label` and `multiline`), or both — whichever answer comes first settles the question. Omitted fields keep Welt's defaults; building the shape through this helper turns a typo into an immediate `TypeError` instead of a silent fallback to Welt's default rendering:
+#### `interruptReason(message, options, input)`
+
+Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt); omitted fields keep Welt's defaults, and a typo becomes an immediate `TypeError` instead of a silent fallback to Welt's default rendering:
 
 ```ts
 await context.agent.suspend(
@@ -53,7 +81,7 @@ await context.agent.suspend(
 );
 ```
 
-[Welt's Interrupts doc](https://github.com/iwamot/welt/blob/main/docs/interrupts.md) covers the whole round trip: the reason contract, who can press, multiple interrupts, and expiry.
+[Welt's Interrupts doc](https://github.com/iwamot/welt/blob/main/docs/interrupts.md) covers the Slack side: how each reason renders, who can answer, multiple questions, and expiry.
 
 ## Supported Versions
 
