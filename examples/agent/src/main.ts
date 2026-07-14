@@ -96,7 +96,8 @@ const agent = new Agent({
   description: "A sample agent that replies in a Slack thread through Welt.",
   instructions:
     "You are a helpful assistant replying in a Slack thread. Keep replies concise.",
-  model: bedrock(process.env.MODEL_ID ?? "global.anthropic.claude-opus-4-8"),
+  // `||`, not `??`: an empty MODEL_ID means unset, like Welt's own variables.
+  model: bedrock(process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6"),
   // The record keys are the tool names the model and the thread see.
   tools: {
     current_time: currentTime,
