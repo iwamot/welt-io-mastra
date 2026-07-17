@@ -11,3 +11,7 @@ jobs:
       contents: read
       pull-requests: write  # to comment review summary
     uses: iwamot/workflows/.github/workflows/dependency-review.yml@873e99243e0ab9f834bb4eb42198f701bfe5c21c # v8.4.0
+    with:
+      # @ai-sdk/provider-utils 3.x (pinned by @mastra/core for AI SDK v5
+      # compat) has no patched release for this low-severity advisory.
+      allow-ghsas: GHSA-866g-f22w-33x8
