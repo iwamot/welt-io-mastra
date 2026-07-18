@@ -24,8 +24,8 @@ importers:
         specifier: 4.0.137
         version: 4.0.137(zod@4.4.3)
       '@aws-sdk/credential-providers':
-        specifier: 3.1089.0
-        version: 3.1089.0
+        specifier: 3.1090.0
+        version: 3.1090.0
       '@mastra/core':
         specifier: 1.51.0
         version: 1.51.0(express@5.2.1)(zod@4.4.3)
@@ -194,8 +194,8 @@ packages:
     resolution: {integrity: sha512-gHQb/Kt0chjk/JQDa/GJDqmAvEuVn8n7z10wK2h0LFM9TUDRkohgOO4aEF+s2sBLM0br7Cl5W6P7phgjrrJvLQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-providers@3.1089.0':
-    resolution: {integrity: sha512-td2z7OngoDLoHPe9BRgS3UuX1mb4xvYWSkH8ICdjjkLYGB+3CPawbEgpQ0dIGVYxcxUWo+tM1dVqhu+/z0suOQ==}
+  '@aws-sdk/credential-providers@3.1090.0':
+    resolution: {integrity: sha512-HEfLv6RdiFu8+HO5CUQjjQ/KCWWAHcQCtSPenaF26lYQSjjzKjgvjwAMGBV9/VMrO8V0faIRyoFWhF548UjTOg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/nested-clients@3.997.33':
@@ -1738,7 +1738,7 @@ snapshots:
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
-  '@aws-sdk/credential-providers@3.1089.0':
+  '@aws-sdk/credential-providers@3.1090.0':
     dependencies:
       '@aws-sdk/core': 3.975.3
       '@aws-sdk/credential-provider-cognito-identity': 3.972.58
@@ -2199,7 +2199,7 @@ snapshots:
       '@aws-crypto/sha256-js': 5.2.0
       '@aws-sdk/client-bedrock-agentcore': 3.1085.0
       '@aws-sdk/client-bedrock-agentcore-control': 3.1085.0
-      '@aws-sdk/credential-providers': 3.1089.0
+      '@aws-sdk/credential-providers': 3.1090.0
       '@aws-sdk/protocol-http': 3.374.0
       '@aws-sdk/signature-v4': 3.374.0
       '@fastify/sse': 0.4.0(fastify@5.10.0)
