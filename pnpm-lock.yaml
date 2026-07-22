@@ -21,8 +21,8 @@ importers:
   examples/agent:
     dependencies:
       '@ai-sdk/amazon-bedrock':
-        specifier: 4.0.137
-        version: 4.0.137(zod@4.4.3)
+        specifier: 4.0.138
+        version: 4.0.138(zod@4.4.3)
       '@aws-sdk/credential-providers':
         specifier: 3.1091.0
         version: 3.1091.0
@@ -63,14 +63,14 @@ packages:
       express:
         optional: true
 
-  '@ai-sdk/amazon-bedrock@4.0.137':
-    resolution: {integrity: sha512-b3QxXlxQaAynj9IuealFn0Hx8GMucrIWe8YtXRlyiOtiaV09Qs+X8bbUgziIuZUDazV5E2OvQj1Oie3d6a3yvg==}
+  '@ai-sdk/amazon-bedrock@4.0.138':
+    resolution: {integrity: sha512-C5BvsjCPKtlnethLnKAgBlqHtCCkIgTKBdNKhaj0hpD4InvxPKnINjJPnwdnTV59TSCU1H1yABSmMRmfJfJINw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/anthropic@3.0.98':
-    resolution: {integrity: sha512-JSHw0m15tXsdZWaV64UOjbHFKHGsPVUi9jYApNaz2QOBm987vl+l9aUFnlN1OWmFvDNMIhAPVOYRsFwjK0by/w==}
+  '@ai-sdk/anthropic@3.0.99':
+    resolution: {integrity: sha512-/q4MW3nfwpIHDhfcPcaW6PF8twF7WhfMWVhKMgmFTwFo8oCoFUebp/+Rt4YVSu1a/rEzm7Ap4sQXhfmmzF5xuw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1507,9 +1507,9 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
-  '@ai-sdk/amazon-bedrock@4.0.137(zod@4.4.3)':
+  '@ai-sdk/amazon-bedrock@4.0.138(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/anthropic': 3.0.98(zod@4.4.3)
+      '@ai-sdk/anthropic': 3.0.99(zod@4.4.3)
       '@ai-sdk/openai': 3.0.86(zod@4.4.3)
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.40(zod@4.4.3)
@@ -1518,7 +1518,7 @@ snapshots:
       aws4fetch: 1.0.20
       zod: 4.4.3
 
-  '@ai-sdk/anthropic@3.0.98(zod@4.4.3)':
+  '@ai-sdk/anthropic@3.0.99(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.40(zod@4.4.3)
