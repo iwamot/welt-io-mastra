@@ -1,2 +1,8 @@
 packages:
   - examples/agent
+
+# Overrides live here (not package.json "overrides") because both toolchains
+# read this file: Renovate updates the lockfile with upstream pnpm, which
+# ignores npm-style top-level "overrides", while local/CI installs use aube.
+overrides:
+  '@hono/node-server': '>=2.0.10'
