@@ -8,6 +8,10 @@ mise install
 aube install --frozen-lockfile
 aube run build
 
+# The whole suite, on this Node version — the tests run on the runtime the
+# package is used from, so a version's own behavior is what they check.
+node --test 'tests/*.test.ts'
+
 # Pack the package and install it in an isolated directory to exercise the
 # publish path (validates "files" globs, the exports map, deps resolution).
 TARBALL="$PWD/$(npm pack --silent)"

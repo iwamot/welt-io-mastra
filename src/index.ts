@@ -9,6 +9,11 @@
  * chunks carry shapes Welt does not render. Each function here adapts one
  * piece, keeping the host app a thin loop around `Agent.stream()` and
  * `Agent.resumeStream()`.
+ *
+ * `renderableEvents` reduces the stream to the events Welt renders, with
+ * the files of the tools the agent names base64-encoded. `fileEvent`
+ * builds the same `file` event from a name and raw bytes, for the files
+ * the host app attaches itself.
  */
 
 import { Buffer } from "node:buffer";
@@ -253,11 +258,9 @@ export interface FileEvent {
 /**
  * Build a `file` wire event, which Welt uploads to the Slack thread.
  *
- * `renderableEvents` emits these for the files the model generates; this
- * builds the same event from arbitrary bytes, for agents that attach
- * files of their own alongside the reduced stream — yield it from the
- * host app, or `write` it to the tool execution context's stream writer
- * to attach a file from inside a tool.
+ * `renderableEvents` emits these for the files the model returns and the
+ * files of the tools the agent names; this builds the same event from
+ * arbitrary bytes, for the files the host app attaches itself.
  *
  * @param name - The upload filename, extension included.
  * @param data - The raw file bytes.
@@ -453,28 +456,77 @@ const APPROVAL_OPTIONS: readonly InterruptOption[] = [
 
 const MAX_APPROVAL_ARGS_CHARS = 1500;
 
+/** A text part of the content a tool returns. */
+export interface ToolResultTextPart {
+  type: "text";
+  text: string;
+}
+
+/**
+ * A file part of the content a tool returns; `data` is the base64 bytes.
+ *
+ * `filename` is the name Welt uploads the file under — the media type names
+ * it when left off. The model does not see it: the provider names the file
+ * it builds for the model itself.
+ */
+export interface ToolResultMediaPart {
+  type: "media";
+  data: string;
+  mediaType: string;
+  filename?: string;
+}
+
+/**
+ * The tool-result content a tool returns, which `renderableEvents` reads
+ * files from — annotate a tool's output with this and a typo becomes a
+ * compile error rather than a file that never reaches the thread.
+ */
+export interface ToolResultContent {
+  type: "content";
+  value: (ToolResultTextPart | ToolResultMediaPart)[];
+}
+
+/** Options for `renderableEvents`. */
+export interface RenderableEventsOptions {
+  /**
+   * The names of the tools whose files become `file` events. Omitted, no
+   * tool's files reach the thread.
+   */
+  filesFrom?: Iterable<string>;
+}
+
 /**
  * Reduce a Mastra agent stream to the events Welt renders.
  *
  * Iterates the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s)
  * `fullStream` and yields the wire's renderable subset: text chunks
  * (`data`), tool-use indicators (`current_tool_use` / `tool_result`,
- * slimmed so tool output stays off the wire), generated files (`file` —
- * the model's file parts, plus every `fileEvent`-shaped value a tool
- * writes to its execution context's stream writer), interrupts
- * (`interrupt` — a suspended tool call's id and suspend payload, the
- * latter passed through unmodified since interpreting a reason is the
- * renderer's job; a tool call awaiting `requireToolApproval` gets a
- * synthesized reason with Approve/Deny buttons whose `y` / `n` answer
- * maps to `approveToolCall` / `declineToolCall`), and failures (`error`,
- * from error and tripwire chunks). Everything else is dropped.
+ * slimmed so tool output stays off the wire), files (`file` — the model's
+ * own file parts, plus the media parts a tool named in `filesFrom`
+ * returned as its tool-result content), interrupts (`interrupt` — a
+ * suspended tool call's id and suspend payload, the latter passed through
+ * unmodified since interpreting a reason is the renderer's job; a tool
+ * call awaiting `requireToolApproval` gets a synthesized reason with
+ * Approve/Deny buttons whose `y` / `n` answer maps to `approveToolCall` /
+ * `declineToolCall`), and failures (`error`, from error and tripwire
+ * chunks). Everything else is dropped.
+ *
+ * Which of the agent's files belong in the reply is the agent's call, so
+ * a tool's files become `file` events only when the tool is named in
+ * `filesFrom` — a tool that hands the model a file to read stays off the
+ * wire unless it is listed. Files the model itself returns are its reply,
+ * and always go.
  *
  * @param chunks - The chunks of a Mastra agent stream, e.g. `fullStream`.
+ * @param options - `filesFrom`: the names of the tools whose files become
+ *   `file` events.
  * @yields The renderable wire events, in stream order.
  */
 export async function* renderableEvents(
   chunks: AsyncIterable<unknown>,
+  options?: RenderableEventsOptions,
 ): AsyncGenerator<RenderableEvent, void, undefined> {
+  const filesFrom = new Set(options?.filesFrom ?? []);
   for await (const chunk of chunks) {
     if (!isRecord(chunk)) {
       continue;
@@ -506,6 +558,14 @@ export async function* renderableEvents(
             status: payload.isError === true ? "error" : "success",
           },
         };
+        if (
+          typeof payload.toolName === "string" &&
+          filesFrom.has(payload.toolName)
+        ) {
+          for (const event of resultFileEvents(payload.result)) {
+            yield event;
+          }
+        }
         break;
       }
       case "tool-error": {
@@ -515,13 +575,6 @@ export async function* renderableEvents(
             status: "error",
           },
         };
-        break;
-      }
-      case "tool-output": {
-        const event = toolFileEvent(payload.output);
-        if (event !== null) {
-          yield event;
-        }
         break;
       }
       case "file": {
@@ -574,19 +627,40 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
-function toolFileEvent(output: unknown): FileEvent | null {
-  if (!isRecord(output) || !isRecord(output.file)) {
-    return null;
-  }
-  const { name, bytes } = output.file;
+/**
+ * Pull the files a tool handed the model out of its tool result.
+ *
+ * A tool hands the model a file by returning AI SDK tool-result content —
+ * `ToolResultContent`, a `media` part per file — which the stream carries
+ * as the tool's raw result. The upload name comes from the part's
+ * `filename`, and falls back to the media type when the tool leaves it
+ * off. Content that does not fit the shape carries no file.
+ */
+function resultFileEvents(result: unknown): FileEvent[] {
   if (
-    typeof name !== "string" ||
-    name.length === 0 ||
-    typeof bytes !== "string"
+    !isRecord(result) ||
+    result.type !== "content" ||
+    !Array.isArray(result.value)
   ) {
-    return null;
+    return [];
   }
-  return { file: { name, bytes } };
+  const events: FileEvent[] = [];
+  for (const part of result.value) {
+    if (
+      !isRecord(part) ||
+      part.type !== "media" ||
+      typeof part.data !== "string" ||
+      part.data.length === 0
+    ) {
+      continue;
+    }
+    const name =
+      typeof part.filename === "string" && part.filename.length > 0
+        ? part.filename
+        : fileName(part.mediaType);
+    events.push({ file: { name, bytes: part.data } });
+  }
+  return events;
 }
 
 function fileBytes(data: unknown): string | null {
