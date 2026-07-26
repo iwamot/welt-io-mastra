@@ -37,6 +37,8 @@ Each file-carrying part gets the media type Mastra expects in place of the Conve
 
 Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
 
+Register the agent on a `Mastra` instance and drive it through `mastra.getAgent(...)`: that instance is what holds the suspended run, so an agent built and streamed on its own has nothing for `resumeStream` to find.
+
 ### Outbound
 
 #### `renderableEvents(chunks)`

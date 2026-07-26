@@ -15,6 +15,7 @@
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { Agent } from "@mastra/core/agent";
+import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
 import type { RenderableEvent } from "@welt-io/mastra";
 import {
@@ -90,21 +91,32 @@ const sampleDangerousAction = createTool({
   },
 });
 
-const agent = new Agent({
-  id: "welt-example-agent",
-  name: "Welt example agent",
-  description: "A sample agent that replies in a Slack thread through Welt.",
-  instructions:
-    "You are a helpful assistant replying in a Slack thread. Keep replies concise.",
-  // `||`, not `??`: an empty MODEL_ID means unset, like Welt's own variables.
-  model: bedrock(process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6"),
-  // The record keys are the tool names the model and the thread see.
-  tools: {
-    current_time: currentTime,
-    attach_sample_file: attachSampleFile,
-    sample_dangerous_action: sampleDangerousAction,
+// The agent lives on a Mastra instance and is driven through it, because
+// that instance is what holds an interrupted run: an Agent streamed on its
+// own keeps no suspended run for `resumeStream` to find.
+const mastra = new Mastra({
+  agents: {
+    weltExample: new Agent({
+      id: "welt-example-agent",
+      name: "Welt example agent",
+      description:
+        "A sample agent that replies in a Slack thread through Welt.",
+      instructions:
+        "You are a helpful assistant replying in a Slack thread. Keep replies concise.",
+      // `||`, not `??`: an empty MODEL_ID means unset, like Welt's own variables.
+      model: bedrock(
+        process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6",
+      ),
+      // The record keys are the tool names the model and the thread see.
+      tools: {
+        current_time: currentTime,
+        attach_sample_file: attachSampleFile,
+        sample_dangerous_action: sampleDangerousAction,
+      },
+    }),
   },
 });
+const agent = mastra.getAgent("weltExample");
 
 // Where an interrupted run waits for its answers. One slot is enough:
 // AgentCore Runtime runs each session in its own microVM, so this process
