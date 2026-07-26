@@ -50,8 +50,11 @@ The Bedrock provider is pinned to its AI SDK v6 line (`@ai-sdk/amazon-bedrock@4`
 ## Tools
 
 - `current_time` — the minimal tool: plain text streaming, nothing else. Ask "what time is it?" to see tool use in the thread.
-- `attach_sample_file` — writes a `fileEvent` to its tool stream, which @welt-io/mastra passes through as a file upload in the thread. Ask it to attach the sample file.
+- `create_sample_file` — writes a small CSV and returns it as a media part, which the model reads and Welt uploads to the thread as `sample.csv`. Ask it for a sample file.
 - `sample_dangerous_action` — a pretend dangerous action (no side effects, no extra AWS permissions) that pauses for human approval: Welt renders the pause as **Approve** / **Cancel** buttons plus a free-text field in the Slack thread, and whichever answer comes first — a press, or a typed instruction — resumes the run. Ask "deploy to prod", then press a button or type something like "run the tests first". See [Welt's Interrupts doc](https://github.com/iwamot/welt/blob/main/docs/interrupts.md) for the round trip.
+- `sample_draft_report` — drafts a small report, pauses to show it for approval, and on approval returns it as `report.md`. Drafting before the pause is the Mastra suspend pitfall: an interrupted tool re-executes from its start on resume, so the drafting sits in the first pass's branch and the draft waits out the pause in a map keyed on the tool call id — the published file stays identical to the approved draft. The draft is timestamped, so a silent redraft would show. Ask "draft a report about apples", then answer the buttons.
+
+The two that produce files are named in the entrypoint's `filesFrom` — that is what puts their files in the thread, and a tool left out of it would hand its files to the model alone. The agent's instructions carry one line about those files: the model sees each one as a document named by the Bedrock provider, so it is told to call files by the names their tools state — the names Welt uploads them under.
 
 ## Optional: file input
 

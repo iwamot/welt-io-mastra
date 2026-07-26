@@ -17,11 +17,10 @@ import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
-import type { RenderableEvent } from "@welt-io/mastra";
+import type { RenderableEvent, ToolResultContent } from "@welt-io/mastra";
 import {
   decodeInterruptResponses,
   decodeMessages,
-  fileEvent,
   interruptReason,
   renderableEvents,
 } from "@welt-io/mastra";
@@ -41,17 +40,53 @@ const currentTime = createTool({
   execute: async () => new Date().toISOString(),
 });
 
-const attachSampleFile = createTool({
-  id: "attach_sample_file",
-  description: "Attach a small sample CSV file to the Slack thread.",
+/** Build tool-result content that says something and nothing more. */
+function textContent(text: string): ToolResultContent {
+  return { type: "content", value: [{ type: "text", text }] };
+}
+
+/**
+ * Build the tool-result content that hands the model one file.
+ *
+ * A media part is how a tool gives the model a file, and the tool's
+ * `toModelOutput` is what puts the content in front of it. The `filename`
+ * is the name @welt-io/mastra uploads the file under, free of the run's
+ * other files: the Bedrock provider names the document it builds itself,
+ * so nothing competes for the name a human reads.
+ */
+function fileContent(
+  text: string,
+  filename: string,
+  mediaType: string,
+  data: Uint8Array,
+): ToolResultContent {
+  return {
+    type: "content",
+    value: [
+      { type: "text", text },
+      {
+        type: "media",
+        data: Buffer.from(data).toString("base64"),
+        mediaType,
+        filename,
+      },
+    ],
+  };
+}
+
+const createSampleFile = createTool({
+  id: "create_sample_file",
+  description: "Create a small sample CSV file.",
   inputSchema: z.object({}),
-  execute: async (_input, context) => {
-    // A `fileEvent`-shaped value written to the tool's stream surfaces as
-    // a `file` wire event, which Welt uploads to the thread.
-    const csv = new TextEncoder().encode("fruit,count\napple,3\nbanana,5\n");
-    await context?.writer?.write(fileEvent("sample.csv", csv));
-    return "Attached sample.csv to the thread.";
-  },
+  execute: async () =>
+    fileContent(
+      "Created sample.csv.",
+      "sample.csv",
+      "text/csv",
+      new TextEncoder().encode("fruit,count\napple,3\nbanana,5\n"),
+    ),
+  // The raw result is the agent's to keep; this is what the model sees.
+  toModelOutput: (output) => output,
 });
 
 const sampleDangerousAction = createTool({
@@ -91,6 +126,73 @@ const sampleDangerousAction = createTool({
   },
 });
 
+// Draft bodies by tool call id, dropped as soon as their call is answered.
+const drafts = new Map<string, string>();
+
+const sampleDraftReport = createTool({
+  id: "sample_draft_report",
+  description: "Draft a small report on a topic and ask whether to publish it.",
+  inputSchema: z.object({
+    topic: z.string().describe("The report topic."),
+  }),
+  resumeSchema: z.string(),
+  // A sample of work before a suspend: the draft is written first, then the
+  // run pauses to show it for the publish decision, and approval returns
+  // the approved draft as a markdown file.
+  execute: async (input, context) => {
+    const toolCallId = context?.agent?.toolCallId ?? "";
+    const answer = context?.agent?.resumeData;
+    if (answer === undefined) {
+      // Drafting belongs in this branch alone: Mastra re-executes the tool
+      // from its start on resume, and a redraft (timestamped here to make
+      // that visible) would publish something other than what the human
+      // approved. The draft outlives the pause in the map, since a resumed
+      // execution gets the answer but not the suspend payload back.
+      const draft =
+        `# ${input.topic}\n\nEverything about ${input.topic} is going well.\n\n` +
+        `_Drafted at ${new Date().toISOString()}._\n`;
+      drafts.set(toolCallId, draft);
+      await context?.agent?.suspend(
+        interruptReason(
+          `May I publish this draft?\n\n\`\`\`\n${draft}\`\`\``,
+          [
+            { value: "y", label: "Publish", style: "primary" },
+            { value: "n", label: "Discard" },
+          ],
+          { label: "Or tell me what to fix" },
+        ),
+      );
+      return undefined;
+    }
+    const draft = drafts.get(toolCallId) ?? "";
+    drafts.delete(toolCallId);
+    if (answer === "y") {
+      return fileContent(
+        "The user answered the publish question in the thread by pressing" +
+          " Publish, so this draft is already published there as report.md." +
+          " The publish flow is complete; nothing is left to approve.",
+        "report.md",
+        "text/markdown",
+        new TextEncoder().encode(draft),
+      );
+    }
+    if (answer === "n") {
+      return textContent(
+        "The user discarded the draft; nothing was published.",
+      );
+    }
+    return textContent(
+      `The draft was not published. The user said instead: ${answer}`,
+    );
+  },
+  toModelOutput: (output) => output,
+});
+
+// The tools whose files belong in the Slack thread. A tool left out keeps
+// its files to the model — this agent has none, but an agent that reads
+// documents for the model would.
+const FILES_FROM = ["create_sample_file", "sample_draft_report"];
+
 // The agent lives on a Mastra instance and is driven through it, because
 // that instance is what holds an interrupted run: an Agent streamed on its
 // own keeps no suspended run for `resumeStream` to find.
@@ -101,8 +203,15 @@ const mastra = new Mastra({
       name: "Welt example agent",
       description:
         "A sample agent that replies in a Slack thread through Welt.",
+      // A document's name is the model's handle on it, not the filename a
+      // human reads — and here the two differ, since the Bedrock provider
+      // names the documents it builds (`document-1`) while Welt uploads
+      // under the name the tool gave. Left unsaid, the model announces the
+      // name the user cannot see.
       instructions:
-        "You are a helpful assistant replying in a Slack thread. Keep replies concise.",
+        "You are a helpful assistant replying in a Slack thread. Keep replies" +
+        " concise. Files reach the thread under the names their tools state;" +
+        " never refer to a file by the name it carries as a document.",
       // `||`, not `??`: an empty MODEL_ID means unset, like Welt's own variables.
       model: bedrock(
         process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6",
@@ -110,8 +219,9 @@ const mastra = new Mastra({
       // The record keys are the tool names the model and the thread see.
       tools: {
         current_time: currentTime,
-        attach_sample_file: attachSampleFile,
+        create_sample_file: createSampleFile,
         sample_dangerous_action: sampleDangerousAction,
+        sample_draft_report: sampleDraftReport,
       },
     }),
   },
@@ -142,7 +252,9 @@ async function* replies(
   stream: Awaited<ReturnType<typeof agent.stream>>,
 ): AsyncGenerator<{ data: RenderableEvent }> {
   let interrupted = false;
-  for await (const event of renderableEvents(stream.fullStream)) {
+  for await (const event of renderableEvents(stream.fullStream, {
+    filesFrom: FILES_FROM,
+  })) {
     if ("interrupt" in event) {
       interrupted = true;
     }
