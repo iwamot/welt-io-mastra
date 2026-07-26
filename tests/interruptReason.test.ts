@@ -26,7 +26,7 @@ describe("interruptReason", () => {
           { value: "y", label: "Deploy", style: "primary" },
           { value: "n", label: "Cancel" },
         ],
-        { label: "Or tell me what to do instead", multiline: true },
+        { label: "Or type your answer", multiline: true },
       ),
       {
         message: "Deploy?",
@@ -34,7 +34,7 @@ describe("interruptReason", () => {
           { value: "y", label: "Deploy", style: "primary" },
           { value: "n", label: "Cancel" },
         ],
-        input: { label: "Or tell me what to do instead", multiline: true },
+        input: { label: "Or type your answer", multiline: true },
       },
     );
   });

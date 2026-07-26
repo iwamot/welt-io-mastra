@@ -99,7 +99,7 @@ const sampleDangerousAction = createTool({
   resumeSchema: z.string(),
   // A sample of the approval round trip: the suspend below pauses the run
   // until someone answers in the Slack thread — with the buttons, or by
-  // typing an instruction into the text field. Nothing is actually
+  // typing an answer into the text field. Nothing is actually
   // executed.
   execute: async (input, context) => {
     const answer = context?.agent?.resumeData;
@@ -111,7 +111,7 @@ const sampleDangerousAction = createTool({
             { value: "y", label: "Approve", style: "primary" },
             { value: "n", label: "Cancel" },
           ],
-          { label: "Or tell me what to do instead" },
+          { label: "Or type your answer" },
         ),
       );
       return undefined;
@@ -122,7 +122,7 @@ const sampleDangerousAction = createTool({
     if (answer === "n") {
       return "The action was cancelled by the user.";
     }
-    return `The action was not run. The user said instead: ${answer}`;
+    return `The action was not run. The user answered: ${answer}`;
   },
 });
 
@@ -159,7 +159,7 @@ const sampleDraftReport = createTool({
             { value: "y", label: "Publish", style: "primary" },
             { value: "n", label: "Discard" },
           ],
-          { label: "Or tell me what to fix" },
+          { label: "Or type your answer" },
         ),
       );
       return undefined;
@@ -182,7 +182,7 @@ const sampleDraftReport = createTool({
       );
     }
     return textContent(
-      `The draft was not published. The user said instead: ${answer}`,
+      `The draft was not published. The user answered: ${answer}`,
     );
   },
   toModelOutput: (output) => output,
