@@ -204,8 +204,9 @@ const mastra = new Mastra({
       description:
         "A sample agent that replies in a Slack thread through Welt.",
       // A document's name is the model's handle on it, not the filename a
-      // human reads — and here the two differ, since the Bedrock provider
-      // names the documents it builds (`document-1`) while Welt uploads
+      // human reads — and here the two differ: Mastra drops the filename
+      // from tool result content, so the Bedrock provider falls back to
+      // naming the document it builds (`document-1`) while Welt uploads
       // under the name the tool gave. Left unsaid, the model announces the
       // name the user cannot see.
       instructions:
