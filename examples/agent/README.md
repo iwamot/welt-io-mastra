@@ -45,7 +45,7 @@ agentcore deploy
 
 The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model. Note the agent runtime ARN from the deploy output: Welt's `AGENT_ARN` points at it.
 
-The Bedrock provider is pinned to its AI SDK v6 line (`@ai-sdk/amazon-bedrock@4`): with the v7 line (5.x), Mastra 1.50 silently drops image and document parts, so file input breaks.
+The Bedrock provider is pinned to its AI SDK v6 line (`@ai-sdk/amazon-bedrock@4`): with the v7 line (5.x), Mastra 1.52 hands the provider tool-result media parts in its internal `file-data` shape, which v7 providers reject — a tool that returns a file crashes the run.
 
 ## Tools
 
