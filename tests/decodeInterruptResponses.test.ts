@@ -2,14 +2,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { decodeInterruptResponses } from "../src/index.ts";
 
-describe("decodeInterruptResponses", () => {
-  test("returns no responses for a non-object payload", () => {
-    assert.deepEqual(decodeInterruptResponses(undefined), []);
-    assert.deepEqual(decodeInterruptResponses(null), []);
-    assert.deepEqual(decodeInterruptResponses("y"), []);
-    assert.deepEqual(decodeInterruptResponses([["a", "y"]]), []);
-  });
+const rejects = (responses: unknown) =>
+  assert.throws(() => decodeInterruptResponses(responses), TypeError);
 
+describe("decodeInterruptResponses", () => {
   test("decodes answers in payload order", () => {
     const responses = {
       "tool-call-1": "y",
@@ -21,10 +17,20 @@ describe("decodeInterruptResponses", () => {
     ]);
   });
 
-  test("skips non-string answers", () => {
-    const responses = { a: 1, b: "ok", c: null };
-    assert.deepEqual(decodeInterruptResponses(responses), [
-      { toolCallId: "b", answer: "ok" },
-    ]);
+  test("decodes an empty payload to no responses", () => {
+    assert.deepEqual(decodeInterruptResponses({}), []);
+  });
+
+  test("rejects a payload that is not an object", () => {
+    rejects(undefined);
+    rejects(null);
+    rejects("y");
+    rejects([["a", "y"]]);
+  });
+
+  test("rejects an answer that is not a string", () => {
+    rejects({ a: 1 });
+    rejects({ a: null });
+    rejects({ a: "ok", b: 1 });
   });
 });
