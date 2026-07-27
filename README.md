@@ -31,11 +31,17 @@ Turns Welt's Converse-shaped messages — built from the Slack thread, file byte
 | Image | Image |
 | Document / video | File |
 
-Each file-carrying part gets the media type Mastra expects in place of the Converse format token. Malformed entries are skipped.
+Each file-carrying part gets the media type Mastra expects in place of the Converse format token; a format outside that mapping keeps its file and falls back to `application/octet-stream`, which the AI SDK is content to sniff. The base64 travels on as it arrived — an AI SDK file part takes the string itself.
 
 #### `decodeInterruptResponses(responses)`
 
 Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
+
+#### Payloads that violate the contract
+
+Both functions throw a `TypeError` on a payload the [wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md#malformed-payloads) does not describe — an unknown role, a block carrying none of the keys it defines, a document without a name. Welt does not send those, so a throw means the caller is not Welt or Welt has a bug; either way, decoding what is left would hand the agent a conversation with a turn missing.
+
+What the adapter does not read, it does not judge: the base64 goes on untouched, and whatever decodes it downstream is what refuses it.
 
 ### Outbound
 
