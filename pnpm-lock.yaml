@@ -21,17 +21,17 @@ importers:
   examples/agent:
     dependencies:
       '@ai-sdk/amazon-bedrock':
-        specifier: 4.0.141
-        version: 4.0.141(zod@4.4.3)
+        specifier: 4.0.142
+        version: 4.0.142(zod@4.4.3)
       '@aws-sdk/credential-providers':
         specifier: 3.1095.0
         version: 3.1095.0
       '@mastra/core':
         specifier: 1.52.1
-        version: 1.52.1(zod@4.4.3)
+        version: 1.52.1(express@5.2.1)(zod@4.4.3)
       '@welt-io/mastra':
         specifier: workspace:*
-        version: 0.0.0
+        version: link:../..
       bedrock-agentcore:
         specifier: 0.4.1
         version: 0.4.1
@@ -63,14 +63,14 @@ packages:
       express:
         optional: true
 
-  '@ai-sdk/amazon-bedrock@4.0.141':
-    resolution: {integrity: sha512-HvBC4Yr6EyvKlaZ8+i35uUnNMpDZVSFUnch/BI1uk4wFmq04KGd9bPp2LlZRY64+VJPgE1OC6bxWXiRf+N5MVw==}
+  '@ai-sdk/amazon-bedrock@4.0.142':
+    resolution: {integrity: sha512-Xz3KvfpBitSC0gmalfMVhmLEMSJgrdk6lbCL1+1c1N816KyqbH8677YhFYH//wxEQyV2GdrDZDGIm46eWgxQTA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/anthropic@3.0.102':
-    resolution: {integrity: sha512-QV4QH8ugKBzGsrIqHzI9jzxIuYbXmddwSPEKwv80KD5U1D0ewyVr+9BoaFNvXtMxLQUhcIw1GSaAb3V86CpnJQ==}
+  '@ai-sdk/anthropic@3.0.103':
+    resolution: {integrity: sha512-aefFtdBHYowKccDaQdf2hX6kvIiqeShaOAPo3DujsaGH7m8lSW5GficJOhMCXpPBBv+4lZnEWrnIIyV5YeouDw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1568,9 +1568,9 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
-  '@ai-sdk/amazon-bedrock@4.0.141(zod@4.4.3)':
+  '@ai-sdk/amazon-bedrock@4.0.142(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/anthropic': 3.0.102(zod@4.4.3)
+      '@ai-sdk/anthropic': 3.0.103(zod@4.4.3)
       '@ai-sdk/openai': 3.0.88(zod@4.4.3)
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.40(zod@4.4.3)
@@ -1579,7 +1579,7 @@ snapshots:
       aws4fetch: 1.0.20
       zod: 4.4.3
 
-  '@ai-sdk/anthropic@3.0.102(zod@4.4.3)':
+  '@ai-sdk/anthropic@3.0.103(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@ai-sdk/provider-utils': 4.0.40(zod@4.4.3)
@@ -1694,7 +1694,7 @@ snapshots:
       '@aws-sdk/types': 3.974.2
       '@aws-sdk/xml-builder': 3.972.36
       '@aws/lambda-invoke-store': 0.3.0
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/signature-v4': 5.6.8
       '@smithy/types': 4.16.1
       bowser: 2.14.1
@@ -1723,7 +1723,7 @@ snapshots:
     dependencies:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -1739,7 +1739,7 @@ snapshots:
     dependencies:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/fetch-http-handler': 5.6.9
       '@smithy/node-http-handler': 4.9.9
       '@smithy/types': 4.16.1
@@ -1766,7 +1766,7 @@ snapshots:
       '@aws-sdk/credential-provider-web-identity': 3.972.66
       '@aws-sdk/nested-clients': 3.997.34
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/credential-provider-imds': 4.4.12
       '@smithy/types': 4.16.1
       tslib: 2.8.1
@@ -1792,7 +1792,7 @@ snapshots:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/nested-clients': 3.997.34
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -1814,7 +1814,7 @@ snapshots:
       '@aws-sdk/credential-provider-sso': 3.973.4
       '@aws-sdk/credential-provider-web-identity': 3.972.66
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/credential-provider-imds': 4.4.12
       '@smithy/types': 4.16.1
       tslib: 2.8.1
@@ -1837,7 +1837,7 @@ snapshots:
     dependencies:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -1855,7 +1855,7 @@ snapshots:
       '@aws-sdk/nested-clients': 3.997.34
       '@aws-sdk/token-providers': 3.1092.0
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -1874,7 +1874,7 @@ snapshots:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/nested-clients': 3.997.34
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -1911,7 +1911,7 @@ snapshots:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/signature-v4-multi-region': 3.996.41
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/fetch-http-handler': 5.6.9
       '@smithy/node-http-handler': 4.9.9
       '@smithy/types': 4.16.1
@@ -1957,7 +1957,7 @@ snapshots:
       '@aws-sdk/core': 3.976.0
       '@aws-sdk/nested-clients': 3.997.34
       '@aws-sdk/types': 3.974.2
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -2040,7 +2040,7 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
-  '@mastra/core@1.52.1(zod@4.4.3)':
+  '@mastra/core@1.52.1(express@5.2.1)(zod@4.4.3)':
     dependencies:
       '@a2a-js/sdk': 0.3.14(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.4.3)'
@@ -2081,6 +2081,7 @@ snapshots:
       - '@grpc/grpc-js'
       - ai
       - bufferutil
+      - express
       - rxjs
       - supports-color
       - utf-8-validate
@@ -2148,7 +2149,7 @@ snapshots:
 
   '@smithy/credential-provider-imds@4.4.12':
     dependencies:
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -2167,7 +2168,7 @@ snapshots:
 
   '@smithy/eventstream-codec@4.4.12':
     dependencies:
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       tslib: 2.8.1
 
   '@smithy/fetch-http-handler@5.6.10':
@@ -2178,7 +2179,7 @@ snapshots:
 
   '@smithy/fetch-http-handler@5.6.9':
     dependencies:
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -2198,7 +2199,7 @@ snapshots:
 
   '@smithy/node-http-handler@4.9.9':
     dependencies:
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
@@ -2277,7 +2278,7 @@ snapshots:
 
   '@smithy/util-utf8@4.4.12':
     dependencies:
-      '@smithy/core': 3.29.7
+      '@smithy/core': 3.29.8
       tslib: 2.8.1
 
   '@standard-schema/spec@1.1.0': {}
