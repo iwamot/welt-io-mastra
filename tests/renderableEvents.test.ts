@@ -1,58 +1,70 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import type { ChunkType } from "@mastra/core/stream";
+import { ChunkFrom } from "@mastra/core/stream";
 import type {
   InterruptEvent,
   InterruptReason,
   RenderableEventsOptions,
+  ToolResultContent,
 } from "../src/index.ts";
 import { renderableEvents } from "../src/index.ts";
 
+type PayloadChunk = Extract<ChunkType, { payload: unknown }>;
+
+/**
+ * Build one stream chunk.
+ *
+ * The only cast in this file: the payload is checked against the union
+ * member its `type` names, so what these tests feed the reduction is what
+ * Mastra declares it yields — `ChunkFrom` is Mastra's own enum, so the
+ * envelope is real too.
+ */
+function chunk<T extends PayloadChunk["type"]>(
+  type: T,
+  payload: Extract<PayloadChunk, { type: T }>["payload"],
+): ChunkType {
+  return { type, payload, runId: "run-1", from: ChunkFrom.AGENT } as ChunkType;
+}
+
 async function* stream(
-  chunks: readonly unknown[],
-): AsyncGenerator<unknown, void, undefined> {
+  chunks: readonly ChunkType[],
+): AsyncGenerator<ChunkType, void, undefined> {
   for (const chunk of chunks) {
     yield chunk;
   }
 }
 
 function rendered(
-  chunks: readonly unknown[],
+  chunks: readonly ChunkType[],
   options?: RenderableEventsOptions,
 ) {
   return Array.fromAsync(renderableEvents(stream(chunks), options));
 }
 
-function mediaResult(parts: readonly unknown[]) {
+function content(parts: ToolResultContent["value"]): ToolResultContent {
   return { type: "content", value: parts };
-}
-
-function chunk(type: string, payload: unknown) {
-  return { type, payload, runId: "run-1", from: "AGENT" };
 }
 
 function interruptOf(event: unknown): InterruptEvent["interrupt"] {
   return (event as InterruptEvent).interrupt;
 }
 
+function reasonOf(event: unknown): InterruptReason {
+  return interruptOf(event).reason as InterruptReason;
+}
+
 describe("renderableEvents", () => {
-  test("drops unrenderable chunks", async () => {
+  test("drops the chunks Welt does not render", async () => {
     const chunks = [
-      null,
-      "start",
-      ["text-delta"],
-      { type: "text-delta" },
-      { type: "text-delta", payload: "hi" },
       chunk("start", {}),
-      chunk("step-finish", { stepResult: { reason: "stop" } }),
-      chunk("finish", { stepResult: { reason: "stop" } }),
-      chunk("reasoning-delta", { text: "hmm" }),
-      chunk("tool-output", {
-        output: { file: { name: "a.txt", bytes: "aGk=" } },
-        toolCallId: "t1",
-        toolName: "my_tool",
-      }),
+      chunk("text-start", { id: "1" }),
+      chunk("text-end", { id: "1" }),
+      chunk("reasoning-delta", { id: "1", text: "hmm" }),
+      chunk("raw", { value: 1 }),
+      chunk("abort", {}),
     ];
-    assert.deepEqual(await rendered(chunks, { filesFrom: ["my_tool"] }), []);
+    assert.deepEqual(await rendered(chunks), []);
   });
 
   test("yields text chunks", async () => {
@@ -60,31 +72,17 @@ describe("renderableEvents", () => {
     assert.deepEqual(await rendered(chunks), [{ data: "Hello" }]);
   });
 
-  test("drops empty or non-string text", async () => {
-    const chunks = [
-      chunk("text-delta", { text: "" }),
-      chunk("text-delta", { text: 5 }),
-    ];
+  test("drops an empty text delta, which Welt cannot render", async () => {
+    const chunks = [chunk("text-delta", { id: "1", text: "" })];
     assert.deepEqual(await rendered(chunks), []);
   });
 
   test("slims tool calls to the tool-use indicator", async () => {
     const chunks = [
-      chunk("tool-call", {
-        toolCallId: "t1",
-        toolName: "my_tool",
-        args: { a: 1 },
-      }),
+      chunk("tool-call", { toolCallId: "t1", toolName: "my_tool" }),
     ];
     assert.deepEqual(await rendered(chunks), [
       { current_tool_use: { toolUseId: "t1", name: "my_tool" } },
-    ]);
-  });
-
-  test("nulls missing tool-call fields", async () => {
-    const chunks = [chunk("tool-call", { toolCallId: 5 })];
-    assert.deepEqual(await rendered(chunks), [
-      { current_tool_use: { toolUseId: null, name: null } },
     ]);
   });
 
@@ -95,19 +93,26 @@ describe("renderableEvents", () => {
         toolName: "my_tool",
         result: "big output",
       }),
-      chunk("tool-result", { toolCallId: "t2", isError: true }),
-      chunk("tool-result", { toolCallId: "t3", isError: "yes" }),
+      chunk("tool-result", {
+        toolCallId: "t2",
+        toolName: "my_tool",
+        result: "boom",
+        isError: true,
+      }),
     ];
     assert.deepEqual(await rendered(chunks), [
       { tool_result: { toolUseId: "t1", status: "success" } },
       { tool_result: { toolUseId: "t2", status: "error" } },
-      { tool_result: { toolUseId: "t3", status: "success" } },
     ]);
   });
 
   test("maps tool errors to an error status", async () => {
     const chunks = [
-      chunk("tool-error", { toolCallId: "t1", error: new Error("boom") }),
+      chunk("tool-error", {
+        toolCallId: "t1",
+        toolName: "my_tool",
+        error: new Error("boom"),
+      }),
     ];
     assert.deepEqual(await rendered(chunks), [
       { tool_result: { toolUseId: "t1", status: "error" } },
@@ -119,7 +124,7 @@ describe("renderableEvents", () => {
       chunk("tool-result", {
         toolCallId: "t1",
         toolName: "create_sample_file",
-        result: mediaResult([
+        result: content([
           { type: "text", text: "Created sample.csv." },
           {
             type: "media",
@@ -144,7 +149,7 @@ describe("renderableEvents", () => {
       chunk("tool-result", {
         toolCallId: "t1",
         toolName: "file_read",
-        result: mediaResult([
+        result: content([
           { type: "media", data: "YSxi", mediaType: "application/pdf" },
         ]),
       }),
@@ -167,7 +172,7 @@ describe("renderableEvents", () => {
       chunk("tool-result", {
         toolCallId: "t1",
         toolName: "draft",
-        result: mediaResult([
+        result: content([
           { type: "media", data: "IyBoaQ==", mediaType: "text/markdown" },
           { type: "media", data: "aGk=", mediaType: "image/png", filename: "" },
         ]),
@@ -183,36 +188,41 @@ describe("renderableEvents", () => {
     );
   });
 
-  test("drops tool results that carry no media parts", async () => {
+  test("takes no file from a result that is not tool-result content", async () => {
+    // A tool returns whatever it likes, so this is the one reply shape that
+    // has to be recognized rather than read.
+    const results: unknown[] = [
+      "done",
+      null,
+      ["a media part"],
+      { type: "json", value: { ok: true } },
+      { type: "content", value: "a media part" },
+      content([{ type: "text", text: "hi" }]),
+      { type: "content", value: ["media", { type: "media" }] },
+      { type: "content", value: [{ type: "media", data: 5 }] },
+    ];
+    const chunks = results.map((result, index) =>
+      chunk("tool-result", { toolCallId: `t${index}`, toolName: "t", result }),
+    );
+    assert.deepEqual(
+      await rendered(chunks, { filesFrom: ["t"] }),
+      results.map((_, index) => ({
+        tool_result: { toolUseId: `t${index}`, status: "success" },
+      })),
+    );
+  });
+
+  test("names a media part with no media type at all", async () => {
     const chunks = [
-      chunk("tool-result", { toolCallId: "t1", toolName: "t", result: "done" }),
       chunk("tool-result", {
-        toolCallId: "t2",
+        toolCallId: "t1",
         toolName: "t",
-        result: { type: "json", value: { ok: true } },
-      }),
-      chunk("tool-result", {
-        toolCallId: "t3",
-        toolName: "t",
-        result: { type: "content", value: "a media part" },
-      }),
-      chunk("tool-result", {
-        toolCallId: "t4",
-        toolName: "t",
-        result: mediaResult([
-          "media",
-          { type: "text", text: "hi" },
-          { type: "media", mediaType: "text/csv" },
-          { type: "media", data: "", mediaType: "text/csv" },
-          { type: "media", data: new Uint8Array([1]), mediaType: "text/csv" },
-        ]),
+        result: { type: "content", value: [{ type: "media", data: "aGk=" }] },
       }),
     ];
     assert.deepEqual(await rendered(chunks, { filesFrom: ["t"] }), [
       { tool_result: { toolUseId: "t1", status: "success" } },
-      { tool_result: { toolUseId: "t2", status: "success" } },
-      { tool_result: { toolUseId: "t3", status: "success" } },
-      { tool_result: { toolUseId: "t4", status: "success" } },
+      { file: { name: "file.bin", bytes: "aGk=" } },
     ]);
   });
 
@@ -237,7 +247,7 @@ describe("renderableEvents", () => {
     ]);
   });
 
-  const nameByMimeType: [string | undefined, string][] = [
+  const nameByMimeType: [string, string][] = [
     ["video/quicktime", "video.mov"],
     ["video/3gpp", "video.3gp"],
     ["audio/mpeg", "audio.mpeg"],
@@ -245,25 +255,16 @@ describe("renderableEvents", () => {
     ["text/markdown", "file.md"],
     ["application/pdf", "file.pdf"],
     ["image/svg+xml", "image.bin"],
-    [undefined, "file.bin"],
+    ["", "file.bin"],
   ];
   for (const [mimeType, name] of nameByMimeType) {
-    test(`synthesizes a name from mime type ${mimeType}`, async () => {
+    test(`synthesizes the name ${name} from the media type ${mimeType}`, async () => {
       const chunks = [chunk("file", { data: "aGk=", mimeType })];
       assert.deepEqual(await rendered(chunks), [
         { file: { name, bytes: "aGk=" } },
       ]);
     });
   }
-
-  test("drops empty or invalid file data", async () => {
-    const chunks = [
-      chunk("file", { data: "", mimeType: "image/png" }),
-      chunk("file", { data: new Uint8Array(), mimeType: "image/png" }),
-      chunk("file", { data: 5, mimeType: "image/png" }),
-    ];
-    assert.deepEqual(await rendered(chunks), []);
-  });
 
   test("maps a suspended tool call to an interrupt, reason passed through", async () => {
     const reason = { message: "Deploy?", options: [{ value: "y" }] };
@@ -283,35 +284,19 @@ describe("renderableEvents", () => {
     assert.equal(interruptOf(events[0]).reason, reason);
   });
 
-  test("defaults a missing tool name to an empty string", async () => {
-    const chunks = [chunk("tool-call-suspended", { toolCallId: "t1" })];
-    assert.deepEqual(await rendered(chunks), [
-      { interrupt: { id: "t1", name: "", reason: undefined } },
-    ]);
-  });
-
-  test("drops interrupts without a tool call id", async () => {
-    const chunks = [
-      chunk("tool-call-suspended", { toolName: "deploy" }),
-      chunk("tool-call-suspended", { toolCallId: "" }),
-      chunk("tool-call-approval", { toolName: "deploy" }),
-    ];
-    assert.deepEqual(await rendered(chunks), []);
-  });
-
   test("synthesizes an Approve/Deny reason for a tool-call approval", async () => {
     const chunks = [
       chunk("tool-call-approval", {
         toolCallId: "t1",
         toolName: "deploy",
         args: { env: "prod" },
+        resumeSchema: "{}",
       }),
     ];
     const events = await rendered(chunks);
-    const interrupt = interruptOf(events[0]);
-    assert.equal(interrupt.id, "t1");
-    assert.equal(interrupt.name, "deploy");
-    const reason = interrupt.reason as InterruptReason;
+    assert.equal(interruptOf(events[0]).id, "t1");
+    assert.equal(interruptOf(events[0]).name, "deploy");
+    const reason = reasonOf(events[0]);
     assert.equal(
       reason.message,
       'May I run `deploy`?\n```\n{\n  "env": "prod"\n}\n```',
@@ -329,30 +314,25 @@ describe("renderableEvents", () => {
         toolCallId: "t1",
         toolName: "deploy",
         args: {},
+        resumeSchema: "{}",
       }),
       chunk("tool-call-approval", {
         toolCallId: "t2",
         toolName: "deploy",
-        args: "prod",
+        args: { n: 1n },
+        resumeSchema: "{}",
       }),
       chunk("tool-call-approval", {
         toolCallId: "t3",
-        toolName: "deploy",
-        args: { n: 1n },
+        toolName: "",
+        args: {},
+        resumeSchema: "{}",
       }),
-      chunk("tool-call-approval", { toolCallId: "t4" }),
     ];
     const events = await rendered(chunks);
     assert.deepEqual(
-      events.map(
-        (event) => (interruptOf(event).reason as InterruptReason).message,
-      ),
-      [
-        "May I run `deploy`?",
-        "May I run `deploy`?",
-        "May I run `deploy`?",
-        "May I run this tool?",
-      ],
+      events.map((event) => reasonOf(event).message),
+      ["May I run `deploy`?", "May I run `deploy`?", "May I run this tool?"],
     );
   });
 
@@ -362,35 +342,39 @@ describe("renderableEvents", () => {
         toolCallId: "t1",
         toolName: "deploy",
         args: { text: "a".repeat(3000) },
+        resumeSchema: "{}",
       }),
     ];
-    const events = await rendered(chunks);
-    const message = (interruptOf(events[0]).reason as InterruptReason).message;
+    const message = reasonOf((await rendered(chunks))[0]).message;
     assert.ok(message.endsWith("…\n```"));
     assert.ok(message.length < 1600);
   });
 
   test("builds a fresh approval reason per event", async () => {
-    const chunks = [
-      chunk("tool-call-approval", { toolCallId: "t1", toolName: "deploy" }),
-      chunk("tool-call-approval", { toolCallId: "t2", toolName: "deploy" }),
-    ];
-    const events = await rendered(chunks);
-    const first = interruptOf(events[0]).reason as InterruptReason;
-    const second = interruptOf(events[1]).reason as InterruptReason;
+    const approval = (toolCallId: string) =>
+      chunk("tool-call-approval", {
+        toolCallId,
+        toolName: "deploy",
+        args: {},
+        resumeSchema: "{}",
+      });
+    const events = await rendered([approval("t1"), approval("t2")]);
+    const first = reasonOf(events[0]);
+    const second = reasonOf(events[1]);
     assert.notEqual(first.options, second.options);
     assert.notEqual(first.options?.[0], second.options?.[0]);
   });
 
   test("maps error chunks to error events", async () => {
-    const chunks = [
-      chunk("error", { error: "model exploded" }),
-      chunk("error", { error: new Error("boom") }),
-      chunk("error", { error: new Error("") }),
-      chunk("error", { error: "" }),
-      chunk("error", { error: 5 }),
-      chunk("error", {}),
+    const errors: unknown[] = [
+      "model exploded",
+      new Error("boom"),
+      new Error(""),
+      "",
+      5,
+      undefined,
     ];
+    const chunks = errors.map((error) => chunk("error", { error }));
     assert.deepEqual(await rendered(chunks), [
       { error: "model exploded" },
       { error: "boom" },
@@ -404,7 +388,7 @@ describe("renderableEvents", () => {
   test("maps tripwire chunks to error events", async () => {
     const chunks = [
       chunk("tripwire", { reason: "PII detected" }),
-      chunk("tripwire", {}),
+      chunk("tripwire", { reason: "" }),
     ];
     assert.deepEqual(await rendered(chunks), [
       { error: "PII detected" },
@@ -414,10 +398,14 @@ describe("renderableEvents", () => {
 
   test("preserves stream order", async () => {
     const chunks = [
-      chunk("text-delta", { text: "Let me check. " }),
+      chunk("text-delta", { id: "1", text: "Let me check. " }),
       chunk("tool-call", { toolCallId: "t1", toolName: "current_time" }),
-      chunk("tool-result", { toolCallId: "t1" }),
-      chunk("text-delta", { text: "It is noon." }),
+      chunk("tool-result", {
+        toolCallId: "t1",
+        toolName: "current_time",
+        result: "noon",
+      }),
+      chunk("text-delta", { id: "2", text: "It is noon." }),
     ];
     assert.deepEqual(await rendered(chunks), [
       { data: "Let me check. " },

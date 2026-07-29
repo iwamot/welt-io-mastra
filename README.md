@@ -11,6 +11,8 @@ The [Mastra](https://mastra.ai/) (TypeScript) adapter for [Welt](https://github.
 npm install @welt-io/mastra
 ```
 
+`@mastra/core` comes with it as a peer dependency: the messages this package builds and the stream chunks it reads are Mastra's own types.
+
 ## Usage
 
 See [`examples/agent`](examples/agent) — the smallest complete agent built on this package (text streaming, tool use, file output, file input, and human-approval tools). The sections below explain the adapters it wires in.
@@ -31,7 +33,9 @@ Turns Welt's Converse-shaped messages — built from the Slack thread, file byte
 | Image | Image |
 | Document / video | File |
 
-Each file-carrying part gets the media type Mastra expects in place of the Converse format token; a format outside that mapping keeps its file and falls back to `application/octet-stream`, which the AI SDK is content to sniff. The base64 travels on as it arrived — an AI SDK file part takes the string itself.
+Each file-carrying part gets the media type an AI SDK part takes in place of the Converse format token — every format token the wire carries has one. The base64 travels on as it arrived, since an AI SDK part takes the string itself.
+
+Video is the exception, and the wire is not the reason: `@ai-sdk/amazon-bedrock` sends `image/*` to a Converse `image` block and everything else to a `document` block, and its media-type table holds no video type, so a video upload throws `Unsupported file mime type: video/mp4` while the request is being built — whatever the model. Leave `video` out of Welt's [`FILE_INPUT_MODALITIES`](https://github.com/iwamot/welt/blob/main/docs/files.md) when the agent runs on Bedrock.
 
 #### `decodeInterruptResponses(responses)`
 
@@ -39,9 +43,15 @@ Turns Welt's resume payload — a mapping of interrupt id to the answer a human 
 
 #### Payloads that violate the contract
 
-Both functions throw a `TypeError` on a payload the [wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md#malformed-payloads) does not describe — an unknown role, a block carrying none of the keys it defines, a document without a name. Welt does not send those, so a throw means the caller is not Welt or Welt has a bug; either way, decoding what is left would hand the agent a conversation with a turn missing.
+Both functions check the payload against [Welt's published schema](https://github.com/iwamot/welt/blob/main/schema/request-payload.schema.json) and decode what it vouched for. A violation throws a `WireContractError`, which names where it broke:
 
-What the adapter does not read, it does not judge: the base64 goes on untouched, and whatever decodes it downstream is what refuses it.
+```
+$[1].content[0].image.source.bytes: must NOT have fewer than 1 characters
+```
+
+Nothing else is checked. The base64 is the one thing the schema annotates without asserting, and it goes on untouched — whatever decodes it downstream is what refuses it.
+
+Welt does not send a payload that fails this, so a throw means the caller is not Welt or Welt has a bug; either way, decoding what is left would hand the agent a conversation with a turn missing.
 
 ### Outbound
 
@@ -95,11 +105,11 @@ Builds the same `file` event from a filename and raw bytes, for the files the ho
 yield fileEvent("report.csv", csvBytes);
 ```
 
-Tools have no use for it — they hand files to the model as tool-result content, and `filesFrom` decides which of those reach the thread.
+A nameless file throws a `WireContractError`, since Welt drops one. Tools have no use for it — they hand files to the model as tool-result content, and `filesFrom` decides which of those reach the thread.
 
 #### `interruptReason(message, options, input)`
 
-Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt); omitted fields keep Welt's defaults, and a typo becomes an immediate `TypeError` instead of a silent fallback to Welt's default rendering:
+Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt); omitted fields keep Welt's defaults. What it builds is checked against Welt's [reply schema](https://github.com/iwamot/welt/blob/main/schema/reply-events.schema.json) before it is returned, so a typo throws a `WireContractError` instead of a silent fallback to Welt's default rendering:
 
 ```ts
 await context.agent.suspend(

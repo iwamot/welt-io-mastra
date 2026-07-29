@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { fileEvent } from "../src/index.ts";
+import { fileEvent, WireContractError } from "../src/index.ts";
 
 describe("fileEvent", () => {
   test("builds a file event with base64 bytes", () => {
@@ -15,7 +15,14 @@ describe("fileEvent", () => {
     });
   });
 
-  test("throws on an empty name", () => {
-    assert.throws(() => fileEvent("", new Uint8Array()), TypeError);
+  test("refuses a nameless file, which Welt drops", () => {
+    assert.throws(
+      () => fileEvent("", new Uint8Array()),
+      (error: unknown) => {
+        assert.ok(error instanceof WireContractError);
+        assert.equal(error.path, "$.name");
+        return true;
+      },
+    );
   });
 });
