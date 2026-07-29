@@ -1,6 +1,6 @@
 {
   "files": {
-    "includes": ["src/**", "tests/**", "examples/**"]
+    "includes": ["scripts/**", "src/**", "tests/**", "examples/**"]
   },
   "formatter": {
     "enabled": true,

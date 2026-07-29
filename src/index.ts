@@ -14,50 +14,175 @@
  * the files of the tools the agent names base64-encoded. `fileEvent`
  * builds the same `file` event from a name and raw bytes, for the files
  * the host app attaches itself.
+ *
+ * Neither direction is restated here. What arrives is checked against
+ * Welt's published schemas, vendored as `schema/` and compiled into
+ * `_schema.ts`, and what the builders produce is checked against them
+ * before it is returned. The reply stream is read as what Mastra's types
+ * say it is: `fullStream` yields a closed union of chunks, so each one is
+ * read for what it is rather than guarded against shapes Mastra does not
+ * produce.
  */
 
 import { Buffer } from "node:buffer";
+import type { AIV5Type } from "@mastra/core/agent/message-list";
+import type { ChunkType } from "@mastra/core/stream";
+import type { ErrorObject, ValidateFunction } from "ajv/dist/2020.js";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import { REPLY_EVENTS, REQUEST_PAYLOAD } from "./_schema.ts";
 
-/** A text part of a decoded model message. */
-export interface DecodedTextPart {
-  type: "text";
+// strict: false — the schemas are Welt's, written to the specification
+// rather than to Ajv's stricter reading of it.
+const ajv = new Ajv2020({ strict: false });
+
+/**
+ * Build a validator for one definition of a wire schema.
+ *
+ * `decodeMessages` and `decodeInterruptResponses` each take one value out
+ * of Welt's envelope rather than the envelope itself, and the builders
+ * produce one reply shape each, so each validator points at the definition
+ * for its own value.
+ *
+ * @param defs - The `$defs` of the schema carrying the definition.
+ * @param definition - The name under those `$defs`.
+ * @returns The validator.
+ */
+function validator(defs: object, definition: string): ValidateFunction {
+  return ajv.compile({ $ref: `#/$defs/${definition}`, $defs: defs });
+}
+
+// Inbound: the two envelope values, each taken on its own.
+const MESSAGES = validator(REQUEST_PAYLOAD.$defs, "messages");
+const INTERRUPT_RESPONSES = validator(
+  REQUEST_PAYLOAD.$defs,
+  "interruptResponses",
+);
+
+// Outbound: what the builders below must produce for Welt to render it.
+const FILE = validator(REPLY_EVENTS.$defs, "file");
+const STRUCTURED_REASON = validator(REPLY_EVENTS.$defs, "structuredReason");
+
+/**
+ * Thrown when a value does not match the shape Welt's wire contract gives
+ * it: a payload Welt sent, or an event one of the builders below built.
+ *
+ * A payload that violates the contract is a bug on the sending side rather
+ * than an input to interpret, and an event that violates it would reach the
+ * Slack thread as Welt's fallback rendering instead of what was meant.
+ */
+export class WireContractError extends Error {
+  /** Where it broke, as a path into the value (`$.content[0].text`). */
+  readonly path: string;
+
+  constructor(path: string, detail: string) {
+    super(`${path}: ${detail}`);
+    this.name = "WireContractError";
+    this.path = path;
+  }
+}
+
+/**
+ * Check a value against one wire schema, raising where it broke.
+ *
+ * A message is checked against one definition per role, and a content
+ * block against one per kind, so a violation inside one fails the whole
+ * group and is reported against the block as a whole as well. The error
+ * that says which value, and why, is the deepest one.
+ *
+ * @param validate - The validator for this value.
+ * @param value - The value to check.
+ * @throws {WireContractError} If the value violates the contract.
+ */
+function checked(validate: ValidateFunction, value: unknown): void {
+  if (validate(value)) {
+    return;
+  }
+  // Ajv fills these in whenever validation fails; the cast says so.
+  const errors = validate.errors as ErrorObject[];
+  const deepest = errors.reduce((worst, error) =>
+    error.instancePath.length > worst.instancePath.length ? error : worst,
+  );
+  throw new WireContractError(
+    shownPath(deepest.instancePath),
+    deepest.message as string,
+  );
+}
+
+/**
+ * Show an Ajv instance path as a path into the value.
+ *
+ * @param instancePath - The JSON Pointer Ajv reports (`/1/content/0`).
+ * @returns The path as a caller would write it (`$[1].content[0]`).
+ */
+function shownPath(instancePath: string): string {
+  return instancePath
+    .split("/")
+    .slice(1)
+    .reduce(
+      (shown, segment) =>
+        /^\d+$/.test(segment) ? `${shown}[${segment}]` : `${shown}.${segment}`,
+      "$",
+    );
+}
+
+// The payload shapes the schema has vouched for, as far as the decoding
+// below reads them. The format tokens are Converse's, which is what the
+// wire carries; each maps to the media type an AI SDK part takes instead.
+type WireImageFormat = "gif" | "jpeg" | "png" | "webp";
+type WireDocumentFormat =
+  | "csv"
+  | "doc"
+  | "docx"
+  | "html"
+  | "md"
+  | "pdf"
+  | "txt"
+  | "xls"
+  | "xlsx";
+type WireVideoFormat =
+  | "flv"
+  | "mkv"
+  | "mov"
+  | "mp4"
+  | "mpeg"
+  | "mpg"
+  | "three_gp"
+  | "webm"
+  | "wmv";
+
+interface WireSource {
+  bytes: string;
+}
+
+interface WireTextBlock {
   text: string;
 }
 
-/** An image part of a decoded model message; `image` is the base64 data. */
-export interface DecodedImagePart {
-  type: "image";
-  image: string;
-  mediaType?: string;
-}
+type WireUserBlock =
+  | WireTextBlock
+  | { image: { format: WireImageFormat; source: WireSource } }
+  | {
+      document: {
+        name: string;
+        format: WireDocumentFormat;
+        source: WireSource;
+      };
+    }
+  | { video: { format: WireVideoFormat; source: WireSource } };
 
-/** A file part of a decoded model message; `data` is the base64 data. */
-export interface DecodedFilePart {
-  type: "file";
-  data: string;
-  mediaType: string;
-  filename?: string;
-}
+type WireMessage =
+  | { role: "user"; content: WireUserBlock[] }
+  | { role: "assistant"; content: WireTextBlock[] };
 
-/** A content part of a decoded user message. */
-export type DecodedUserPart =
-  | DecodedTextPart
-  | DecodedImagePart
-  | DecodedFilePart;
-
-/** An AI SDK model message decoded from Welt's Converse-shaped payload. */
-export type DecodedMessage =
-  | { role: "user"; content: DecodedUserPart[] }
-  | { role: "assistant"; content: DecodedTextPart[] };
-
-const IMAGE_MEDIA_TYPES: Readonly<Record<string, string>> = {
+// Total maps: the schema admits these format tokens and no others.
+const IMAGE_MEDIA_TYPES: Readonly<Record<WireImageFormat, string>> = {
   gif: "image/gif",
   jpeg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
 };
 
-const DOCUMENT_MEDIA_TYPES: Readonly<Record<string, string>> = {
+const DOCUMENT_MEDIA_TYPES: Readonly<Record<WireDocumentFormat, string>> = {
   csv: "text/csv",
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -69,7 +194,7 @@ const DOCUMENT_MEDIA_TYPES: Readonly<Record<string, string>> = {
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 };
 
-const VIDEO_MEDIA_TYPES: Readonly<Record<string, string>> = {
+const VIDEO_MEDIA_TYPES: Readonly<Record<WireVideoFormat, string>> = {
   flv: "video/x-flv",
   mkv: "video/x-matroska",
   mov: "video/quicktime",
@@ -81,15 +206,21 @@ const VIDEO_MEDIA_TYPES: Readonly<Record<string, string>> = {
   wmv: "video/x-ms-wmv",
 };
 
+type UserPart = Exclude<
+  Extract<AIV5Type.ModelMessage, { role: "user" }>["content"],
+  string
+>[number];
+
 /**
  * Decode Welt's Converse-shaped messages into AI SDK model messages.
  *
  * Strands consumes Welt's messages as-is, but Mastra does not: its agents
  * take AI SDK model messages, whose file parts carry a media type instead
  * of a Converse format token, and whose base64 data needs no decoding.
- * This walks the payload's `messages` value and rebuilds each message —
- * text blocks become text parts, image blocks image parts, and document
- * and video blocks file parts.
+ * This checks the payload against Welt's published schema and rebuilds
+ * each message — text blocks become text parts, image blocks image parts,
+ * and document and video blocks file parts. The result feeds
+ * `Agent.stream()`.
  *
  * A payload that departs from the wire contract throws: it is a bug on
  * the sending side, and decoding what is left of it would hand the agent
@@ -97,185 +228,57 @@ const VIDEO_MEDIA_TYPES: Readonly<Record<string, string>> = {
  *
  * @param messages - The `messages` value of Welt's payload.
  * @returns Model messages for `Agent.stream()`.
- * @throws {TypeError} If the payload violates the wire contract.
+ * @throws {WireContractError} If the payload violates the wire contract.
+ *   The error names the offending path.
  */
-export function decodeMessages(messages: unknown): DecodedMessage[] {
-  if (!Array.isArray(messages)) {
-    throw new TypeError(`messages must be an array, got ${shown(messages)}`);
-  }
-  return messages.map(decodedMessage);
+export function decodeMessages(messages: unknown): AIV5Type.ModelMessage[] {
+  checked(MESSAGES, messages);
+  // The schema has vouched for the shape; the cast tells the type checker.
+  return (messages as WireMessage[]).map(decodedMessage);
 }
 
-function decodedMessage(message: unknown): DecodedMessage {
-  if (!isRecord(message)) {
-    throw new TypeError(`a message must be an object, got ${shown(message)}`);
-  }
-  const { role } = message;
-  if (role === "user") {
-    return { role, content: contentBlocks(message.content).map(userPart) };
-  }
-  if (role === "assistant") {
+function decodedMessage(message: WireMessage): AIV5Type.ModelMessage {
+  if (message.role === "assistant") {
     return {
-      role,
-      content: contentBlocks(message.content).map(assistantPart),
+      role: "assistant",
+      content: message.content.map(({ text }) => ({ type: "text", text })),
     };
   }
-  throw new TypeError(
-    `a message's role must be "user" or "assistant", got ${shown(role)}`,
-  );
+  return { role: "user", content: message.content.map(userPart) };
 }
 
-function contentBlocks(content: unknown): unknown[] {
-  if (!Array.isArray(content)) {
-    throw new TypeError(
-      `a message's content must be an array, got ${shown(content)}`,
-    );
-  }
-  return content;
-}
-
-function userPart(block: unknown): DecodedUserPart {
-  const record = blockRecord(block);
-  if ("text" in record) {
-    return textPart(record.text);
-  }
-  if ("image" in record) {
-    return imagePart(record.image);
-  }
-  if ("document" in record) {
-    return documentPart(record.document);
-  }
-  if ("video" in record) {
-    return videoPart(record.video);
-  }
-  throw new TypeError(
-    `a content block must carry text, image, document, or video, got the ` +
-      `keys ${shown(Object.keys(record).join(", "))}`,
-  );
-}
-
-// Welt's assistant messages are its own earlier replies, which carry text
-// and nothing else.
-function assistantPart(block: unknown): DecodedTextPart {
-  const record = blockRecord(block);
-  if ("text" in record) {
-    return textPart(record.text);
-  }
-  throw new TypeError(
-    `an assistant message carries text blocks only, got the keys ` +
-      `${shown(Object.keys(record).join(", "))}`,
-  );
-}
-
-function blockRecord(block: unknown): Record<string, unknown> {
-  if (!isRecord(block)) {
-    throw new TypeError(
-      `a content block must be an object, got ${shown(block)}`,
-    );
-  }
-  return block;
-}
-
-function textPart(text: unknown): DecodedTextPart {
-  if (typeof text !== "string") {
-    throw new TypeError(
-      `a text block's text must be a string, got ${shown(text)}`,
-    );
-  }
-  return { type: "text", text };
-}
-
-function imagePart(media: unknown): DecodedImagePart {
-  const record = mediaRecord(media, "image");
-  const bytes = sourceBytes(record, "image");
-  // An unknown format omits the media type; the AI SDK detects common
-  // image types from the bytes.
-  const mediaType =
-    typeof record.format === "string"
-      ? IMAGE_MEDIA_TYPES[record.format]
-      : undefined;
-  return mediaType === undefined
-    ? { type: "image", image: bytes }
-    : { type: "image", image: bytes, mediaType };
-}
-
-function documentPart(media: unknown): DecodedFilePart {
-  const record = mediaRecord(media, "document");
-  const bytes = sourceBytes(record, "document");
-  const { name } = record;
-  if (typeof name !== "string" || name.length === 0) {
-    throw new TypeError(
-      `a document block needs a non-empty name, got ${shown(name)}`,
-    );
-  }
-  return {
-    type: "file",
-    data: bytes,
-    mediaType: fallingBackMediaType(record.format, DOCUMENT_MEDIA_TYPES),
-    filename: name,
-  };
-}
-
-function videoPart(media: unknown): DecodedFilePart {
-  const record = mediaRecord(media, "video");
-  return {
-    type: "file",
-    data: sourceBytes(record, "video"),
-    mediaType: fallingBackMediaType(record.format, VIDEO_MEDIA_TYPES),
-  };
-}
-
-// A format outside the map keeps the file and loses only the type hint,
-// which is the AI SDK's own habit with bytes it cannot place.
-function fallingBackMediaType(
-  format: unknown,
-  mediaTypes: Readonly<Record<string, string>>,
-): string {
-  return (
-    (typeof format === "string" ? mediaTypes[format] : undefined) ??
-    "application/octet-stream"
-  );
-}
-
-function mediaRecord(media: unknown, kind: string): Record<string, unknown> {
-  if (!isRecord(media)) {
-    throw new TypeError(
-      `a ${kind} block must be an object, got ${shown(media)}`,
-    );
-  }
-  return media;
-}
-
-// The base64 travels on as it arrived: an AI SDK file part takes the string
+// The base64 travels on as it arrived: an AI SDK part takes the string
 // itself, so nothing here decodes it, and nothing here has to judge it —
 // whatever refuses invalid base64 downstream is the one that decodes.
-function sourceBytes(media: Record<string, unknown>, kind: string): string {
-  const source = media.source;
-  if (!isRecord(source)) {
-    throw new TypeError(
-      `a ${kind} block needs a source object, got ${shown(source)}`,
-    );
+function userPart(block: WireUserBlock): UserPart {
+  if ("text" in block) {
+    return { type: "text", text: block.text };
   }
-  const bytes = source.bytes;
-  if (typeof bytes !== "string" || bytes.length === 0) {
-    throw new TypeError(
-      `a ${kind} block needs base64 source.bytes, got ${shown(bytes)}`,
-    );
+  if ("image" in block) {
+    const { format, source } = block.image;
+    return {
+      type: "image",
+      image: source.bytes,
+      mediaType: IMAGE_MEDIA_TYPES[format],
+    };
   }
-  return bytes;
-}
-
-function shown(value: unknown): string {
-  if (typeof value === "string") {
-    return JSON.stringify(value);
+  if ("document" in block) {
+    const { name, format, source } = block.document;
+    return {
+      type: "file",
+      data: source.bytes,
+      mediaType: DOCUMENT_MEDIA_TYPES[format],
+      // The document's handle for the model, which is what Welt sends it
+      // under; a video block carries no name to pass on.
+      filename: name,
+    };
   }
-  if (value === null) {
-    return "null";
-  }
-  if (Array.isArray(value)) {
-    return "an array";
-  }
-  return typeof value;
+  const { format, source } = block.video;
+  return {
+    type: "file",
+    data: source.bytes,
+    mediaType: VIDEO_MEDIA_TYPES[format],
+  };
 }
 
 /** One decoded interrupt answer: the suspended tool call and the human's answer. */
@@ -288,7 +291,7 @@ export interface InterruptResponse {
  * Decode Welt's interrupt answers into Mastra resume inputs.
  *
  * Welt resumes an interrupted run with a payload mapping each interrupt
- * id to the answer a human chose in the thread. `renderable_events` uses
+ * id to the answer a human chose in the thread. `renderableEvents` uses
  * the suspended tool call's id as the interrupt id, so each entry here
  * feeds one `Agent.resumeStream(answer, { runId, toolCallId })` call.
  *
@@ -297,25 +300,17 @@ export interface InterruptResponse {
  *
  * @param responses - The `interrupt_responses` value of Welt's payload.
  * @returns One entry per answered interrupt, in payload order.
- * @throws {TypeError} If the payload violates the wire contract.
+ * @throws {WireContractError} If the payload violates the wire contract.
+ *   The error names the offending path.
  */
 export function decodeInterruptResponses(
   responses: unknown,
 ): InterruptResponse[] {
-  if (!isRecord(responses)) {
-    throw new TypeError(
-      `interrupt_responses must be an object, got ${shown(responses)}`,
-    );
-  }
-  return Object.entries(responses).map(([toolCallId, answer]) => {
-    if (typeof answer !== "string") {
-      throw new TypeError(
-        `the answer to ${shown(toolCallId)} must be a string, got ` +
-          `${shown(answer)}`,
-      );
-    }
-    return { toolCallId, answer };
-  });
+  checked(INTERRUPT_RESPONSES, responses);
+  // The schema has vouched for the shape; the cast tells the type checker.
+  return Object.entries(responses as Record<string, string>).map(
+    ([toolCallId, answer]) => ({ toolCallId, answer }),
+  );
 }
 
 /** A `file` wire event: a filename plus base64 bytes Welt uploads to Slack. */
@@ -333,37 +328,42 @@ export interface FileEvent {
  * @param name - The upload filename, extension included.
  * @param data - The raw file bytes.
  * @returns The `file` event (name plus base64 bytes).
- * @throws TypeError if the name is empty (Welt drops a nameless file).
+ * @throws {WireContractError} If the event would not be one Welt renders —
+ *   a nameless file, which it drops.
  */
 export function fileEvent(name: string, data: Uint8Array): FileEvent {
-  if (name.length === 0) {
-    throw new TypeError("name must not be empty");
-  }
-  return { file: { name, bytes: Buffer.from(data).toString("base64") } };
+  return checkedFileEvent(name, Buffer.from(data).toString("base64"));
 }
 
+/** Build a `file` event from bytes that are base64 already. */
+function checkedFileEvent(name: string, bytes: string): FileEvent {
+  const file = { name, bytes };
+  checked(FILE, file);
+  return { file };
+}
+
+// Type aliases, not interfaces: an alias gets an implicit index signature,
+// so a reason fits a suspend payload as-is.
+
 /** A button of a structured interrupt reason. */
-export interface InterruptOption {
+export type InterruptOption = {
   value: string;
   label?: string;
   style?: "primary" | "danger";
-}
+};
 
 /** The free-text field of a structured interrupt reason. */
-export interface InterruptInput {
+export type InterruptInput = {
   label?: string;
   multiline?: boolean;
-}
+};
 
 /** The structured interrupt reason shape Welt renders as widgets. */
-export interface InterruptReason {
+export type InterruptReason = {
   message: string;
   options?: InterruptOption[];
   input?: InterruptInput;
-}
-
-const OPTION_KEYS = new Set(["value", "label", "style"]);
-const INPUT_KEYS = new Set(["label", "multiline"]);
+};
 
 /**
  * Build an interrupt reason that Welt renders as the specified widgets.
@@ -372,107 +372,39 @@ const INPUT_KEYS = new Set(["label", "multiline"]);
  * (`options`), a free-text field whose submitted text becomes the
  * interrupt's response (`input`), or both — whichever answer comes
  * first, a pressed button or the submitted text, settles the question.
- * Both widget specs are the wire's own shapes; building them through
- * this helper turns a typo into an immediate TypeError instead of a
- * silent fallback to Welt's default rendering.
+ * Both widget specs are the wire's own shapes; building them through this
+ * helper checks the result against Welt's published schema, so a typo
+ * throws here instead of reaching the thread as Welt's default rendering —
+ * which is what a reason it cannot match falls back to, silently.
  *
  * @param message - The text Welt shows above the widgets.
  * @param options - One entry per button: a required `value` (what the
- *   suspended tool receives as the answer when the button is pressed),
- *   an optional `label` (the button text; omitted, Welt shows the
- *   value), and an optional `style` ("primary" or "danger").
+ *   suspended tool receives as the answer when the button is pressed), an
+ *   optional `label` (the button text; omitted, Welt shows the value), and
+ *   an optional `style` ("primary" or "danger"). At most 25, which is what
+ *   one Slack actions block holds.
  * @param input - The free-text field: an optional `label` (the field's
  *   label) and an optional `multiline` (whether the field accepts
  *   multiple lines) — `{}` takes Welt's defaults for both. Omitted, no
  *   field renders.
  * @returns The reason to pass to the tool execution context's `suspend`.
- * @throws TypeError if the message is empty, neither options nor input
- *   is given, or a widget spec is off — an unknown key, a missing value,
- *   an empty or non-string value/label, a style that is not "primary" or
- *   "danger", or a non-boolean multiline.
+ * @throws {WireContractError} If the reason would not be one Welt renders
+ *   as widgets.
  */
 export function interruptReason(
   message: string,
   options?: readonly InterruptOption[],
   input?: InterruptInput,
 ): InterruptReason {
-  if (message.length === 0) {
-    throw new TypeError("message must not be empty");
-  }
-  if (options === undefined && input === undefined) {
-    throw new TypeError("options or input must be given");
-  }
   const reason: InterruptReason = { message };
   if (options !== undefined) {
-    reason.options = builtOptions(options);
+    reason.options = [...options];
   }
   if (input !== undefined) {
-    reason.input = builtInput(input);
+    reason.input = input;
   }
+  checked(STRUCTURED_REASON, reason);
   return reason;
-}
-
-function builtOptions(options: readonly InterruptOption[]): InterruptOption[] {
-  if (options.length === 0) {
-    throw new TypeError("options must not be empty");
-  }
-  const built: InterruptOption[] = [];
-  for (const option of options) {
-    const unknownKeys = Object.keys(option).filter(
-      (key) => !OPTION_KEYS.has(key),
-    );
-    if (unknownKeys.length > 0) {
-      throw new TypeError(
-        `unknown option keys: ${unknownKeys.sort().join(", ")}`,
-      );
-    }
-    const value: unknown = option.value;
-    if (typeof value !== "string" || value.length === 0) {
-      throw new TypeError("option value must be a non-empty string");
-    }
-    const entry: InterruptOption = { value };
-    if ("label" in option) {
-      const label: unknown = option.label;
-      if (typeof label !== "string" || label.length === 0) {
-        throw new TypeError("option label must be a non-empty string");
-      }
-      entry.label = label;
-    }
-    if ("style" in option) {
-      const style: unknown = option.style;
-      if (style !== "primary" && style !== "danger") {
-        throw new TypeError(
-          `style must be "primary" or "danger": ${JSON.stringify(style)}`,
-        );
-      }
-      entry.style = style;
-    }
-    built.push(entry);
-  }
-  return built;
-}
-
-function builtInput(input: InterruptInput): InterruptInput {
-  const unknownKeys = Object.keys(input).filter((key) => !INPUT_KEYS.has(key));
-  if (unknownKeys.length > 0) {
-    throw new TypeError(`unknown input keys: ${unknownKeys.sort().join(", ")}`);
-  }
-  const built: InterruptInput = {};
-  if ("label" in input) {
-    const label: unknown = input.label;
-    if (typeof label !== "string" || label.length === 0) {
-      throw new TypeError("input label must be a non-empty string");
-    }
-    built.label = label;
-  }
-  if ("multiline" in input) {
-    const multiline: unknown = input.multiline;
-    if (typeof multiline !== "boolean") {
-      throw new TypeError("input multiline must be a boolean");
-    }
-    built.multiline = multiline;
-  }
-  return built;
 }
 
 /** A `data` wire event: one text chunk of the reply. */
@@ -482,12 +414,12 @@ export interface TextEvent {
 
 /** A `current_tool_use` wire event: a tool call started. */
 export interface ToolUseEvent {
-  current_tool_use: { toolUseId: string | null; name: string | null };
+  current_tool_use: { toolUseId: string; name: string };
 }
 
 /** A `tool_result` wire event: a tool call finished. */
 export interface ToolResultEvent {
-  tool_result: { toolUseId: string | null; status: "success" | "error" };
+  tool_result: { toolUseId: string; status: "success" | "error" };
 }
 
 /** An `interrupt` wire event: the run paused for a human answer. */
@@ -516,11 +448,6 @@ const EXTENSION_BY_SUBTYPE: Readonly<Record<string, string>> = {
   quicktime: "mov",
   "x-matroska": "mkv",
 };
-
-const APPROVAL_OPTIONS: readonly InterruptOption[] = [
-  { value: "y", label: "Approve", style: "primary" },
-  { value: "n", label: "Deny" },
-];
 
 const MAX_APPROVAL_ARGS_CHARS = 1500;
 
@@ -590,96 +517,84 @@ export interface RenderableEventsOptions {
  *   `file` events.
  * @yields The renderable wire events, in stream order.
  */
-export async function* renderableEvents(
-  chunks: AsyncIterable<unknown>,
+export async function* renderableEvents<OUTPUT = undefined>(
+  chunks: AsyncIterable<ChunkType<OUTPUT>>,
   options?: RenderableEventsOptions,
 ): AsyncGenerator<RenderableEvent, void, undefined> {
   const filesFrom = new Set(options?.filesFrom ?? []);
   for await (const chunk of chunks) {
-    if (!isRecord(chunk)) {
-      continue;
-    }
-    const payload = chunk.payload;
-    if (!isRecord(payload)) {
-      continue;
-    }
     switch (chunk.type) {
       case "text-delta": {
-        if (typeof payload.text === "string" && payload.text.length > 0) {
-          yield { data: payload.text };
+        // A delta the model left empty would be an event Welt cannot render.
+        if (chunk.payload.text.length > 0) {
+          yield { data: chunk.payload.text };
         }
         break;
       }
       case "tool-call": {
-        yield {
-          current_tool_use: {
-            toolUseId: stringOrNull(payload.toolCallId),
-            name: stringOrNull(payload.toolName),
-          },
-        };
+        const { toolCallId, toolName } = chunk.payload;
+        yield { current_tool_use: { toolUseId: toolCallId, name: toolName } };
         break;
       }
       case "tool-result": {
+        const { toolCallId, toolName, isError, result } = chunk.payload;
         yield {
           tool_result: {
-            toolUseId: stringOrNull(payload.toolCallId),
-            status: payload.isError === true ? "error" : "success",
+            toolUseId: toolCallId,
+            status: isError === true ? "error" : "success",
           },
         };
-        if (
-          typeof payload.toolName === "string" &&
-          filesFrom.has(payload.toolName)
-        ) {
-          for (const event of resultFileEvents(payload.result)) {
-            yield event;
-          }
+        if (filesFrom.has(toolName)) {
+          yield* resultFileEvents(result);
         }
         break;
       }
       case "tool-error": {
         yield {
-          tool_result: {
-            toolUseId: stringOrNull(payload.toolCallId),
-            status: "error",
-          },
+          tool_result: { toolUseId: chunk.payload.toolCallId, status: "error" },
         };
         break;
       }
       case "file": {
-        const bytes = fileBytes(payload.data);
-        if (bytes !== null) {
-          yield { file: { name: fileName(payload.mimeType), bytes } };
-        }
+        const { data, mimeType } = chunk.payload;
+        yield checkedFileEvent(
+          fileName(mimeType),
+          // A string is already base64; Mastra sets `payload.base64` only
+          // when `data` is a string, and to the same value.
+          typeof data === "string"
+            ? data
+            : Buffer.from(data).toString("base64"),
+        );
         break;
       }
       case "tool-call-suspended": {
-        const interrupt = interruptFields(payload);
-        if (interrupt !== null) {
-          yield { interrupt: { ...interrupt, reason: payload.suspendPayload } };
-        }
+        const { toolCallId, toolName, suspendPayload } = chunk.payload;
+        yield {
+          interrupt: { id: toolCallId, name: toolName, reason: suspendPayload },
+        };
         break;
       }
       case "tool-call-approval": {
-        const interrupt = interruptFields(payload);
-        if (interrupt !== null) {
-          yield {
-            interrupt: {
-              ...interrupt,
-              reason: approvalReason(interrupt.name, payload.args),
-            },
-          };
-        }
+        const { toolCallId, toolName, args } = chunk.payload;
+        yield {
+          interrupt: {
+            id: toolCallId,
+            name: toolName,
+            reason: approvalReason(toolName, args),
+          },
+        };
         break;
       }
       case "error": {
-        yield { error: errorText(payload.error) };
+        yield { error: errorText(chunk.payload.error) };
         break;
       }
       case "tripwire": {
+        const { reason } = chunk.payload;
         yield {
           error:
-            typeof payload.reason === "string" && payload.reason.length > 0
-              ? payload.reason
+            reason.length > 0
+              ? reason
               : "the reply was blocked by an output processor",
         };
         break;
@@ -691,18 +606,18 @@ export async function* renderableEvents(
   }
 }
 
-function stringOrNull(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
 /**
  * Pull the files a tool handed the model out of its tool result.
  *
  * A tool hands the model a file by returning AI SDK tool-result content —
  * `ToolResultContent`, a `media` part per file — which the stream carries
- * as the tool's raw result. The upload name comes from the part's
- * `filename`, and falls back to the media type when the tool leaves it
- * off. Content that does not fit the shape carries no file.
+ * as the tool's raw result. A tool returns whatever it likes, so this is
+ * the one reply shape that has to be recognized rather than read: content
+ * that does not fit carries no file. The upload name comes from the part's
+ * `filename`, and falls back to the media type when the tool leaves it off.
+ *
+ * @param result - The tool's raw result, as the stream carried it.
+ * @returns One `file` event per media part, or none.
  */
 function resultFileEvents(result: unknown): FileEvent[] {
   if (
@@ -717,8 +632,7 @@ function resultFileEvents(result: unknown): FileEvent[] {
     if (
       !isRecord(part) ||
       part.type !== "media" ||
-      typeof part.data !== "string" ||
-      part.data.length === 0
+      typeof part.data !== "string"
     ) {
       continue;
     }
@@ -726,23 +640,17 @@ function resultFileEvents(result: unknown): FileEvent[] {
       typeof part.filename === "string" && part.filename.length > 0
         ? part.filename
         : fileName(part.mediaType);
-    events.push({ file: { name, bytes: part.data } });
+    events.push(checkedFileEvent(name, part.data));
   }
   return events;
 }
 
-function fileBytes(data: unknown): string | null {
-  // A string is already base64; Mastra sets `payload.base64` only when
-  // `data` is a string, and to the same value.
-  if (typeof data === "string" && data.length > 0) {
-    return data;
-  }
-  if (data instanceof Uint8Array && data.length > 0) {
-    return Buffer.from(data).toString("base64");
-  }
-  return null;
-}
-
+/**
+ * Name a file after the media type it arrived under.
+ *
+ * @param mimeType - The part's media type; a tool's may be anything.
+ * @returns The upload filename (`image.png`, `file.csv`, `file.bin`).
+ */
 function fileName(mimeType: unknown): string {
   const [type = "", subtype = ""] = (
     typeof mimeType === "string" ? mimeType : ""
@@ -755,35 +663,24 @@ function fileName(mimeType: unknown): string {
   return `${stem}.${extension}`;
 }
 
-function interruptFields(
-  payload: Record<string, unknown>,
-): { id: string; name: string } | null {
-  // Welt requires a non-empty id (the resume key) and a string name.
-  if (
-    typeof payload.toolCallId !== "string" ||
-    payload.toolCallId.length === 0
-  ) {
-    return null;
-  }
-  return {
-    id: payload.toolCallId,
-    name: typeof payload.toolName === "string" ? payload.toolName : "",
-  };
-}
-
-function approvalReason(toolName: string, args: unknown): InterruptReason {
+function approvalReason(
+  toolName: string,
+  args: Record<string, unknown>,
+): InterruptReason {
   const heading =
     toolName.length > 0 ? `May I run \`${toolName}\`?` : "May I run this tool?";
   const rendered = renderedArgs(args);
-  return {
-    message:
-      rendered === null ? heading : `${heading}\n\`\`\`\n${rendered}\n\`\`\``,
-    options: APPROVAL_OPTIONS.map((option) => ({ ...option })),
-  };
+  return interruptReason(
+    rendered === null ? heading : `${heading}\n\`\`\`\n${rendered}\n\`\`\``,
+    [
+      { value: "y", label: "Approve", style: "primary" },
+      { value: "n", label: "Deny" },
+    ],
+  );
 }
 
-function renderedArgs(args: unknown): string | null {
-  if (!isRecord(args) || Object.keys(args).length === 0) {
+function renderedArgs(args: Record<string, unknown>): string | null {
+  if (Object.keys(args).length === 0) {
     return null;
   }
   let rendered: string;

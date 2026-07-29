@@ -1,9 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { decodeInterruptResponses } from "../src/index.ts";
+import { decodeInterruptResponses, WireContractError } from "../src/index.ts";
 
-const rejects = (responses: unknown) =>
-  assert.throws(() => decodeInterruptResponses(responses), TypeError);
+/** Assert that a payload is refused, and that the error names `path`. */
+function rejects(responses: unknown, path: string) {
+  assert.throws(
+    () => decodeInterruptResponses(responses),
+    (error: unknown) => {
+      assert.ok(error instanceof WireContractError);
+      assert.equal(error.path, path);
+      return true;
+    },
+  );
+}
 
 describe("decodeInterruptResponses", () => {
   test("decodes answers in payload order", () => {
@@ -17,20 +26,18 @@ describe("decodeInterruptResponses", () => {
     ]);
   });
 
-  test("decodes an empty payload to no responses", () => {
-    assert.deepEqual(decodeInterruptResponses({}), []);
+  test("refuses a payload that is not a mapping of answers", () => {
+    rejects(undefined, "$");
+    rejects("y", "$");
+    rejects([["a", "y"]], "$");
   });
 
-  test("rejects a payload that is not an object", () => {
-    rejects(undefined);
-    rejects(null);
-    rejects("y");
-    rejects([["a", "y"]]);
+  test("refuses a payload that answers nothing", () => {
+    rejects({}, "$");
   });
 
-  test("rejects an answer that is not a string", () => {
-    rejects({ a: 1 });
-    rejects({ a: null });
-    rejects({ a: "ok", b: 1 });
+  test("refuses an answer that is not a string", () => {
+    rejects({ a: 1 }, "$.a");
+    rejects({ a: "ok", b: null }, "$.b");
   });
 });

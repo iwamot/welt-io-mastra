@@ -290,16 +290,7 @@ const app = new BedrockAgentCoreApp({
         return;
       }
 
-      const messages = decodeMessages(envelope.messages);
-      if (messages.length === 0) {
-        yield {
-          data: {
-            data: "I received an empty conversation, so there is nothing to reply to.",
-          },
-        };
-        return;
-      }
-      yield* replies(await agent.stream(messages));
+      yield* replies(await agent.stream(decodeMessages(envelope.messages)));
     },
   },
 });

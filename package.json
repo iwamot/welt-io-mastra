@@ -44,7 +44,14 @@
     "typecheck": "tsc --noEmit",
     "test": "mkdir -p coverage && node --test --experimental-test-coverage --test-coverage-include='src/*.ts' --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info 'tests/*.test.ts'"
   },
+  "dependencies": {
+    "ajv": "8.20.0"
+  },
+  "peerDependencies": {
+    "@mastra/core": "^1.53.0"
+  },
   "devDependencies": {
+    "@mastra/core": "1.53.0",
     "@types/node": "24.13.3",
     "typescript": "7.0.2"
   }

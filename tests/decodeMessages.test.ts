@@ -1,9 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { decodeMessages } from "../src/index.ts";
+import { decodeMessages, WireContractError } from "../src/index.ts";
 
-const rejects = (messages: unknown) =>
-  assert.throws(() => decodeMessages(messages), TypeError);
+/** Assert that a payload is refused, and that the error names `path`. */
+function rejects(messages: unknown, path: string) {
+  assert.throws(
+    () => decodeMessages(messages),
+    (error: unknown) => {
+      assert.ok(error instanceof WireContractError);
+      assert.equal(error.path, path);
+      assert.ok(error.message.startsWith(`${path}: `));
+      return true;
+    },
+  );
+}
+
+const source = { bytes: "aGk=" };
 
 describe("decodeMessages", () => {
   test("decodes text blocks for both roles", () => {
@@ -25,10 +37,7 @@ describe("decodeMessages", () => {
 
   test("decodes an image block into an image part", () => {
     const messages = [
-      {
-        role: "user",
-        content: [{ image: { format: "png", source: { bytes: "aGk=" } } }],
-      },
+      { role: "user", content: [{ image: { format: "png", source } }] },
     ];
     assert.deepEqual(decodeMessages(messages), [
       {
@@ -38,40 +47,11 @@ describe("decodeMessages", () => {
     ]);
   });
 
-  test("omits the media type for an unknown or missing image format", () => {
+  test("decodes a document block into a file part named after it", () => {
     const messages = [
       {
         role: "user",
-        content: [
-          { image: { format: "bmp", source: { bytes: "aGk=" } } },
-          { image: { source: { bytes: "aGk=" } } },
-        ],
-      },
-    ];
-    assert.deepEqual(decodeMessages(messages), [
-      {
-        role: "user",
-        content: [
-          { type: "image", image: "aGk=" },
-          { type: "image", image: "aGk=" },
-        ],
-      },
-    ]);
-  });
-
-  test("decodes a document block into a file part with its name", () => {
-    const messages = [
-      {
-        role: "user",
-        content: [
-          {
-            document: {
-              format: "pdf",
-              name: "Report",
-              source: { bytes: "aGk=" },
-            },
-          },
-        ],
+        content: [{ document: { format: "pdf", name: "Report", source } }],
       },
     ];
     assert.deepEqual(decodeMessages(messages), [
@@ -89,63 +69,75 @@ describe("decodeMessages", () => {
     ]);
   });
 
-  test("falls back to octet-stream for an unknown or missing document format", () => {
+  test("decodes a video block into a nameless file part", () => {
     const messages = [
-      {
-        role: "user",
-        content: [
-          { document: { format: "rtf", name: "n", source: { bytes: "aGk=" } } },
-          { document: { name: "n", source: { bytes: "aGk=" } } },
-        ],
-      },
+      { role: "user", content: [{ video: { format: "mp4", source } }] },
     ];
     assert.deepEqual(decodeMessages(messages), [
       {
         role: "user",
-        content: [
-          {
-            type: "file",
-            data: "aGk=",
-            mediaType: "application/octet-stream",
-            filename: "n",
-          },
-          {
-            type: "file",
-            data: "aGk=",
-            mediaType: "application/octet-stream",
-            filename: "n",
-          },
-        ],
+        content: [{ type: "file", data: "aGk=", mediaType: "video/mp4" }],
       },
     ]);
   });
 
-  test("decodes a video block into a file part", () => {
-    const messages = [
-      {
-        role: "user",
-        content: [
-          { video: { format: "three_gp", source: { bytes: "aGk=" } } },
-          { video: { format: "avi", source: { bytes: "aGk=" } } },
-          { video: { source: { bytes: "aGk=" } } },
-        ],
-      },
-    ];
-    assert.deepEqual(decodeMessages(messages), [
-      {
-        role: "user",
-        content: [
-          { type: "file", data: "aGk=", mediaType: "video/3gpp" },
-          { type: "file", data: "aGk=", mediaType: "application/octet-stream" },
-          { type: "file", data: "aGk=", mediaType: "application/octet-stream" },
-        ],
-      },
-    ]);
-  });
+  // Every format token the schema admits has a media type, so a payload it
+  // vouched for never wants for one.
+  const mediaTypeByFormat: [string, string, string][] = [
+    ["image", "gif", "image/gif"],
+    ["image", "jpeg", "image/jpeg"],
+    ["image", "png", "image/png"],
+    ["image", "webp", "image/webp"],
+    ["document", "csv", "text/csv"],
+    ["document", "doc", "application/msword"],
+    [
+      "document",
+      "docx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    ["document", "html", "text/html"],
+    ["document", "md", "text/markdown"],
+    ["document", "pdf", "application/pdf"],
+    ["document", "txt", "text/plain"],
+    ["document", "xls", "application/vnd.ms-excel"],
+    [
+      "document",
+      "xlsx",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ],
+    ["video", "flv", "video/x-flv"],
+    ["video", "mkv", "video/x-matroska"],
+    ["video", "mov", "video/quicktime"],
+    ["video", "mp4", "video/mp4"],
+    ["video", "mpeg", "video/mpeg"],
+    ["video", "mpg", "video/mpeg"],
+    ["video", "three_gp", "video/3gpp"],
+    ["video", "webm", "video/webm"],
+    ["video", "wmv", "video/x-ms-wmv"],
+  ];
+  for (const [kind, format, mediaType] of mediaTypeByFormat) {
+    test(`maps the ${kind} format ${format} to ${mediaType}`, () => {
+      const media =
+        kind === "document"
+          ? { format, name: "a", source }
+          : { format, source };
+      const [decoded] = decodeMessages([
+        { role: "user", content: [{ [kind]: media }] },
+      ]);
+      const expected =
+        kind === "image"
+          ? { type: "image", image: "aGk=", mediaType }
+          : kind === "document"
+            ? { type: "file", data: "aGk=", mediaType, filename: "a" }
+            : { type: "file", data: "aGk=", mediaType };
+      assert.deepEqual(decoded?.content, [expected]);
+    });
+  }
 
   test("passes the base64 on without decoding or judging it", () => {
-    // An AI SDK file part takes the string itself, so what the bytes decode
-    // to — if anything — is the framework's business, not the adapter's.
+    // An AI SDK part takes the string itself, so what the bytes decode to —
+    // if anything — is the framework's business, not the adapter's. The
+    // schema annotates the encoding without asserting it.
     const messages = [
       {
         role: "user",
@@ -160,104 +152,140 @@ describe("decodeMessages", () => {
     ]);
   });
 
-  test("keeps an empty conversation empty", () => {
-    assert.deepEqual(decodeMessages([]), []);
-  });
-
-  test("passes a message with no content blocks on to the framework", () => {
-    assert.deepEqual(decodeMessages([{ role: "user", content: [] }]), [
-      { role: "user", content: [] },
+  test("leaves the payload it was handed untouched", () => {
+    const messages = [{ role: "user", content: [{ text: "hello" }] }];
+    decodeMessages(messages);
+    assert.deepEqual(messages, [
+      { role: "user", content: [{ text: "hello" }] },
     ]);
   });
 
-  test("rejects a payload that is not an array", () => {
-    rejects(undefined);
-    rejects(null);
-    rejects("hi");
-    rejects({ role: "user" });
+  test("names where a nested block broke", () => {
+    rejects(
+      [
+        { role: "user", content: [{ text: "hi" }] },
+        {
+          role: "user",
+          content: [{ image: { format: "png", source: { bytes: "" } } }],
+        },
+      ],
+      "$[1].content[0].image.source.bytes",
+    );
   });
 
-  test("rejects a message that is not an object", () => {
-    rejects(["hi"]);
-    rejects([null]);
+  test("refuses a payload that is not a conversation", () => {
+    rejects(undefined, "$");
+    rejects("hi", "$");
+    rejects({ messages: [] }, "$");
+    rejects([], "$");
   });
 
-  test("rejects a role the contract does not carry", () => {
-    rejects([{ role: "tool", content: [{ text: "x" }] }]);
-    rejects([{ content: [{ text: "x" }] }]);
+  test("refuses a conversation that does not open with a user turn", () => {
+    rejects([{ role: "assistant", content: [{ text: "hi" }] }], "$[0].role");
   });
 
-  test("rejects content that is not an array", () => {
-    rejects([{ role: "user", content: "hi" }]);
-    rejects([{ role: "assistant", content: 3 }]);
+  test("refuses a role the wire does not carry", () => {
+    rejects([{ role: "system", content: [{ text: "hi" }] }], "$[0].role");
+    rejects([{ content: [{ text: "hi" }] }], "$[0]");
   });
 
-  test("rejects a content block that is not an object", () => {
-    rejects([{ role: "user", content: ["x"] }]);
-    rejects([{ role: "assistant", content: [null] }]);
+  test("refuses a turn without content", () => {
+    rejects([{ role: "user" }], "$[0]");
+    rejects([{ role: "user", content: [] }], "$[0].content");
+    rejects([{ role: "user", content: "hi" }], "$[0].content");
   });
 
-  test("rejects a block carrying no key the contract defines", () => {
-    rejects([{ role: "user", content: [{}] }]);
-    rejects([{ role: "assistant", content: [{ toolUse: {} }] }]);
+  test("refuses an empty text block", () => {
+    rejects(
+      [{ role: "user", content: [{ text: "" }] }],
+      "$[0].content[0].text",
+    );
   });
 
-  test("rejects non-text in an assistant message", () => {
-    rejects([
-      {
-        role: "assistant",
-        content: [{ image: { format: "png", source: { bytes: "aGk=" } } }],
-      },
-    ]);
+  test("refuses a block carrying none of the kinds the wire defines", () => {
+    rejects([{ role: "user", content: [{}] }], "$[0].content[0]");
+    rejects([{ role: "user", content: [{ audio: {} }] }], "$[0].content[0]");
+    rejects([{ role: "user", content: ["hi"] }], "$[0].content[0]");
   });
 
-  test("rejects a text block whose text is not a string", () => {
-    rejects([{ role: "user", content: [{ text: 5 }] }]);
+  test("refuses a block with a key the wire does not define", () => {
+    rejects(
+      [{ role: "user", content: [{ text: "hi", extra: 1 }] }],
+      "$[0].content[0]",
+    );
   });
 
-  test("rejects a media block that is not an object", () => {
-    rejects([{ role: "user", content: [{ image: "x" }] }]);
-    rejects([{ role: "user", content: [{ document: 5 }] }]);
-    rejects([{ role: "user", content: [{ video: 5 }] }]);
+  test("refuses a format the wire does not carry", () => {
+    rejects(
+      [{ role: "user", content: [{ image: { format: "bmp", source } }] }],
+      "$[0].content[0].image.format",
+    );
+    rejects(
+      [
+        {
+          role: "user",
+          content: [{ document: { format: "rtf", name: "a", source } }],
+        },
+      ],
+      "$[0].content[0].document.format",
+    );
+    rejects(
+      [{ role: "user", content: [{ video: { format: "avi", source } }] }],
+      "$[0].content[0].video.format",
+    );
   });
 
-  test("rejects a media block without usable source bytes", () => {
-    rejects([{ role: "user", content: [{ image: { format: "png" } }] }]);
-    rejects([
-      { role: "user", content: [{ image: { format: "png", source: "x" } }] },
-    ]);
-    rejects([
-      {
-        role: "user",
-        content: [{ image: { format: "png", source: { bytes: 5 } } }],
-      },
-    ]);
-    rejects([
-      {
-        role: "user",
-        content: [{ image: { format: "png", source: { bytes: "" } } }],
-      },
-    ]);
-    rejects([
-      { role: "user", content: [{ document: { format: "pdf", name: "n" } }] },
-    ]);
-    rejects([{ role: "user", content: [{ video: { format: "mp4" } }] }]);
+  test("refuses a media block without usable source bytes", () => {
+    rejects(
+      [{ role: "user", content: [{ image: { format: "png" } }] }],
+      "$[0].content[0].image",
+    );
+    rejects(
+      [
+        {
+          role: "user",
+          content: [{ video: { format: "mp4", source: { bytes: 5 } } }],
+        },
+      ],
+      "$[0].content[0].video.source.bytes",
+    );
   });
 
-  test("rejects a document without a name", () => {
-    rejects([
-      {
-        role: "user",
-        content: [{ document: { format: "csv", source: { bytes: "aGk=" } } }],
-      },
-    ]);
-    rejects([
-      {
-        role: "user",
-        content: [
-          { document: { format: "csv", name: "", source: { bytes: "aGk=" } } },
-        ],
-      },
-    ]);
+  test("refuses a document without a name Converse accepts", () => {
+    rejects(
+      [{ role: "user", content: [{ document: { format: "pdf", source } }] }],
+      "$[0].content[0].document",
+    );
+    rejects(
+      [
+        {
+          role: "user",
+          content: [{ document: { format: "pdf", name: "", source } }],
+        },
+      ],
+      "$[0].content[0].document.name",
+    );
+    rejects(
+      [
+        {
+          role: "user",
+          content: [{ document: { format: "pdf", name: "a/b", source } }],
+        },
+      ],
+      "$[0].content[0].document.name",
+    );
+  });
+
+  test("refuses an assistant turn carrying anything but text", () => {
+    rejects(
+      [
+        { role: "user", content: [{ text: "hi" }] },
+        {
+          role: "assistant",
+          content: [{ image: { format: "png", source } }],
+        },
+      ],
+      "$[1].content[0]",
+    );
   });
 });
