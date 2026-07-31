@@ -65,6 +65,9 @@ function reasonOf(event: unknown): InterruptReason {
  * it observable.
  */
 async function warningsOf(run: () => Promise<void>): Promise<string[]> {
+  // Drain first, then listen: a warning an earlier test emitted is still on
+  // its way, and this window is for the warnings `run` itself emits.
+  await new Promise((resolve) => setImmediate(resolve));
   const collected: string[] = [];
   const capture = (warning: Error) => {
     if (warning.name === "WeltWarning") {
@@ -281,6 +284,37 @@ describe("renderableEvents", () => {
     assert.deepEqual(warnings, [
       "Skipped an empty file from create_sample_file: sample.csv",
     ]);
+  });
+
+  test("says nothing about a media part carrying no base64 text", async () => {
+    // A media part's `data` is the file's base64 bytes, so a part that puts
+    // anything else there — a place the file sits at, say — hands over no
+    // bytes to upload. Nothing arrived to skip, so nothing is said: the
+    // warning is for a file that did arrive and was empty.
+    const chunks = [
+      chunk("tool-result", {
+        toolCallId: "t1",
+        toolName: "draft",
+        result: {
+          type: "content",
+          value: [
+            {
+              type: "media",
+              data: { url: "https://example.com/report.pdf" },
+              mediaType: "application/pdf",
+            },
+          ],
+        },
+      }),
+    ];
+    let events: unknown;
+    const warnings = await warningsOf(async () => {
+      events = await rendered(chunks, { filesFrom: ["draft"] });
+    });
+    assert.deepEqual(events, [
+      { tool_result: { toolUseId: "t1", status: "success" } },
+    ]);
+    assert.deepEqual(warnings, []);
   });
 
   test("takes no file from one that points at its bytes by URL", async () => {
