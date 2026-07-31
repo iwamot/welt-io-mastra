@@ -13,7 +13,7 @@ importers:
     devDependencies:
       '@mastra/core':
         specifier: 1.54.0
-        version: 1.54.0(zod@4.4.3)
+        version: 1.54.0(express@5.2.1)(zod@4.4.3)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -27,14 +27,14 @@ importers:
         specifier: 4.0.143
         version: 4.0.143(zod@4.4.3)
       '@aws-sdk/credential-providers':
-        specifier: 3.1097.0
-        version: 3.1097.0
+        specifier: 3.1098.0
+        version: 3.1098.0
       '@mastra/core':
         specifier: 1.54.0
-        version: 1.54.0(zod@4.4.3)
+        version: 1.54.0(express@5.2.1)(zod@4.4.3)
       '@welt-io/mastra':
         specifier: workspace:*
-        version: 0.0.0
+        version: link:../..
       bedrock-agentcore:
         specifier: 0.4.1
         version: 0.4.1
@@ -191,8 +191,8 @@ packages:
     resolution: {integrity: sha512-Ps/f9USafScb6CSQTRPNMzdKL5x5XRwDIRgFvnuFWfClGZe7/fI7iCFqXdxKjc9LBxP28E7iUgNloGgfgw406w==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-providers@3.1097.0':
-    resolution: {integrity: sha512-US/mjIRfRz5g1G/KbaZ3SgswZ+PfGqoXR29ZqwOT+ZAMXCwR/8SIZB1iMN7ngV6+olSbaBsF9RMXhKnTccYJaA==}
+  '@aws-sdk/credential-providers@3.1098.0':
+    resolution: {integrity: sha512-KX9YhCZz1pU+ah/CrGXqtU4S0Jk2uiv3OJ58rfVF1wEKO32n2gw9ZtogYEMBO9gGzv5ju5J+qJXZGebyhx8Q0Q==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/nested-clients@3.997.38':
@@ -298,7 +298,6 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
-      zod: {}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -1496,9 +1495,11 @@ packages:
 
 snapshots:
 
-  '@a2a-js/sdk@0.3.14':
+  '@a2a-js/sdk@0.3.14(express@5.2.1)':
     dependencies:
       uuid: 11.1.1
+    optionalDependencies:
+      express: 5.2.1
 
   '@ai-sdk/amazon-bedrock@4.0.143(zod@4.4.3)':
     dependencies:
@@ -1523,12 +1524,12 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.40(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.76)':
+  '@ai-sdk/provider-utils@2.2.8(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.16
       secure-json-parse: 2.7.0
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@ai-sdk/provider-utils@3.0.30(zod@4.4.3)':
     dependencies:
@@ -1568,12 +1569,12 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)':
+  '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.76)
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
+      '@ai-sdk/provider-utils': 2.2.8(zod@4.4.3)
+      zod: 4.4.3
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
 
   '@aws-crypto/crc32@3.0.0':
     dependencies:
@@ -1724,7 +1725,7 @@ snapshots:
       '@smithy/types': 4.16.1
       tslib: 2.8.1
 
-  '@aws-sdk/credential-providers@3.1097.0':
+  '@aws-sdk/credential-providers@3.1098.0':
     dependencies:
       '@aws-sdk/core': 3.977.3
       '@aws-sdk/credential-provider-cognito-identity': 3.972.63
@@ -1845,16 +1846,16 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
-  '@mastra/core@1.54.0(zod@4.4.3)':
+  '@mastra/core@1.54.0(express@5.2.1)(zod@4.4.3)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14
+      '@a2a-js/sdk': 0.3.14(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.4.3)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.4.3)'
       '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.11(zod@4.4.3)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
       '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.3'
-      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@3.25.76)'
+      '@ai-sdk/ui-utils-v5': '@ai-sdk/ui-utils@1.2.11(zod@4.4.3)'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
       '@mastra/schema-compat': 1.3.4(zod@4.4.3)
@@ -2152,7 +2153,7 @@ snapshots:
       negotiator: 1.0.0
 
   ajv-formats@3.0.1(ajv@8.20.0):
-    dependencies:
+    optionalDependencies:
       ajv: 8.20.0
 
   ajv@8.20.0:
@@ -2182,7 +2183,7 @@ snapshots:
       '@aws-crypto/sha256-js': 5.2.0
       '@aws-sdk/client-bedrock-agentcore': 3.1098.0
       '@aws-sdk/client-bedrock-agentcore-control': 3.1098.0
-      '@aws-sdk/credential-providers': 3.1097.0
+      '@aws-sdk/credential-providers': 3.1098.0
       '@aws-sdk/protocol-http': 3.374.0
       '@aws-sdk/signature-v4': 3.374.0
       '@fastify/sse': 0.4.0(fastify@5.10.0)
@@ -2239,6 +2240,7 @@ snapshots:
       remark-stringify: 11.0.0
       remend: 1.3.0
       unified: 11.0.5
+    optionalDependencies:
       zod: 4.4.3
     transitivePeerDependencies:
       - supports-color
@@ -3258,10 +3260,6 @@ snapshots:
   zod-from-json-schema@0.5.6:
     dependencies:
       zod: 4.4.3
-
-  zod-to-json-schema@3.25.2(zod@3.25.76):
-    dependencies:
-      zod: 3.25.76
 
   zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
