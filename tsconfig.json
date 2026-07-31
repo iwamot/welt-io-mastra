@@ -6,9 +6,6 @@
     "moduleResolution": "bundler",
     "types": ["node"],
     "allowImportingTsExtensions": true,
-    // Node resolves an import specifier as written, so a `.ts` specifier is
-    // what runs; the emit rewrites it to the `.js` that ships.
-    "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
@@ -22,5 +19,5 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["scripts", "src", "tests"]
+  "include": ["src", "tests"]
 }

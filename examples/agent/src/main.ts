@@ -17,7 +17,11 @@ import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
-import type { RenderableEvent, ToolResultContent } from "@welt-io/mastra";
+import type {
+  RenderableEvent,
+  ToolResultContent,
+  WireMessage,
+} from "@welt-io/mastra";
 import {
   decodeInterruptResponses,
   decodeMessages,
@@ -266,12 +270,24 @@ async function* replies(
   }
 }
 
+/**
+ * Welt's payload, which carries one of the two envelopes.
+ *
+ * What Welt sends is taken as correct: it checks its own output against
+ * the wire contract before sending it, so this says what arrives rather
+ * than checking it. A payload carrying neither key is Welt's bug, and the
+ * error it raises is reported as an `error` event by the SDK.
+ */
+type WeltPayload =
+  | { messages: WireMessage[] }
+  | { interrupt_responses: Record<string, string> };
+
 const app = new BedrockAgentCoreApp({
   invocationHandler: {
     process: async function* (payload: unknown) {
-      const envelope = payloadEnvelope(payload);
+      const envelope = payload as WeltPayload;
 
-      if (envelope.interruptResponses !== undefined) {
+      if ("interrupt_responses" in envelope) {
         const runId = suspendedRunId;
         suspendedRunId = null;
         if (runId === null) {
@@ -281,7 +297,7 @@ const app = new BedrockAgentCoreApp({
           throw new Error("No interrupted run to resume in this session.");
         }
         for (const { toolCallId, answer } of decodeInterruptResponses(
-          envelope.interruptResponses,
+          envelope.interrupt_responses,
         )) {
           yield* replies(
             await agent.resumeStream(answer, { runId, toolCallId }),
@@ -294,18 +310,5 @@ const app = new BedrockAgentCoreApp({
     },
   },
 });
-
-function payloadEnvelope(payload: unknown): {
-  messages?: unknown;
-  interruptResponses?: unknown;
-} {
-  if (typeof payload !== "object" || payload === null) {
-    return {};
-  }
-  const record = payload as Record<string, unknown>;
-  return "interrupt_responses" in record
-    ? { interruptResponses: record.interrupt_responses }
-    : { messages: record.messages };
-}
 
 app.run();

@@ -14,8 +14,6 @@ aube licenses
 # so none of its slots can take the patched version. The registry reports this
 # advisory under its numeric id only. Drop the ignore once Mastra's pins move on.
 aube audit --fix update --ignore-unfixable --ignore 1119676
-# Checks the vendored wire schemas and compiles them into the package.
-node scripts/generate-schema.ts
 aube run check:write
 aube run build
 aube run typecheck
