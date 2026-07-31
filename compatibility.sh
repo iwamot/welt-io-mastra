@@ -24,13 +24,14 @@ trap 'rm -rf "$TMP"; rm -f "$TARBALL"' EXIT
 # Exercise the installed package end to end on this Node version.
 (cd "$TMP" && node --input-type=module -e '
 import assert from "node:assert/strict";
-import { decodeMessages, fileEvent, renderableEvents } from "@welt-io/mastra";
+import { decodeMessages, interruptReason, renderableEvents } from "@welt-io/mastra";
 
 assert.deepEqual(decodeMessages([{ role: "user", content: [{ text: "hi" }] }]), [
   { role: "user", content: [{ type: "text", text: "hi" }] },
 ]);
-assert.deepEqual(fileEvent("hi.txt", new TextEncoder().encode("hi")), {
-  file: { name: "hi.txt", bytes: "aGk=" },
+assert.deepEqual(interruptReason("Deploy?", [{ value: "y" }]), {
+  message: "Deploy?",
+  options: [{ value: "y" }],
 });
 const events = [];
 for await (const event of renderableEvents(

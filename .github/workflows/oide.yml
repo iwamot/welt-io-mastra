@@ -18,8 +18,6 @@ jobs:
       SOURCES: |
         # renovate: datasource=github-tags depName=iwamot/repo-template
         iwamot/repo-template@v1.8.0
-        # renovate: datasource=github-tags depName=iwamot/welt
-        iwamot/welt@v0.5.0 .github/Oidefile.welt
     secrets:
       OIDE_APP_CLIENT_ID: ${{ secrets.OIDE_APP_CLIENT_ID }}
       OIDE_APP_PRIVATE_KEY: ${{ secrets.OIDE_APP_PRIVATE_KEY }}

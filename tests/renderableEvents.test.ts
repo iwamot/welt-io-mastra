@@ -4,11 +4,13 @@ import type { ChunkType } from "@mastra/core/stream";
 import { ChunkFrom } from "@mastra/core/stream";
 import type {
   InterruptEvent,
-  InterruptReason,
   RenderableEventsOptions,
   ToolResultContent,
 } from "../src/index.ts";
-import { renderableEvents } from "../src/index.ts";
+import { type interruptReason, renderableEvents } from "../src/index.ts";
+
+/** The reason shape an interrupt event carries, which is what it builds. */
+type InterruptReason = ReturnType<typeof interruptReason>;
 
 type PayloadChunk = Extract<ChunkType, { payload: unknown }>;
 
@@ -52,6 +54,31 @@ function interruptOf(event: unknown): InterruptEvent["interrupt"] {
 
 function reasonOf(event: unknown): InterruptReason {
   return interruptOf(event).reason as InterruptReason;
+}
+
+/**
+ * Collect the process warnings this package emits while `run` runs.
+ *
+ * `process.emitWarning` is how a Node package says something the caller
+ * should know without failing the run, and a listener is how a test reads
+ * it back — the emission lands on the next tick, so the wait is what makes
+ * it observable.
+ */
+async function warningsOf(run: () => Promise<void>): Promise<string[]> {
+  const collected: string[] = [];
+  const capture = (warning: Error) => {
+    if (warning.name === "WeltWarning") {
+      collected.push(warning.message);
+    }
+  };
+  process.on("warning", capture);
+  try {
+    await run();
+    await new Promise((resolve) => setImmediate(resolve));
+  } finally {
+    process.off("warning", capture);
+  }
+  return collected;
 }
 
 describe("renderableEvents", () => {
@@ -226,6 +253,68 @@ describe("renderableEvents", () => {
     ]);
   });
 
+  test("keeps a file with no bytes off the wire", async () => {
+    const chunks = [
+      chunk("tool-result", {
+        toolCallId: "t1",
+        toolName: "create_sample_file",
+        result: content([
+          {
+            type: "media",
+            data: "",
+            mediaType: "text/csv",
+            filename: "sample.csv",
+          },
+        ]),
+      }),
+    ];
+    let events: unknown;
+    const warnings = await warningsOf(async () => {
+      events = await rendered(chunks, { filesFrom: ["create_sample_file"] });
+    });
+    assert.deepEqual(events, [
+      { tool_result: { toolUseId: "t1", status: "success" } },
+    ]);
+    // Slack refuses a zero-byte upload and fails the whole reply with it,
+    // so the warning names the tool that returned the file — which the
+    // filename alone would not say.
+    assert.deepEqual(warnings, [
+      "Skipped an empty file from create_sample_file: sample.csv",
+    ]);
+  });
+
+  test("takes no file from one that points at its bytes by URL", async () => {
+    // Mastra leaves `base64` unset for a URL string, which is how a
+    // pointer is told from bytes. There is nothing to upload from one,
+    // and nothing worth saying about it either.
+    const chunks = [
+      chunk("file", {
+        data: "https://example.com/generated.png",
+        mimeType: "image/png",
+      }),
+    ];
+    let events: unknown;
+    const warnings = await warningsOf(async () => {
+      events = await rendered(chunks);
+    });
+    assert.deepEqual(events, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  test("warns against the model for an empty file the model returned", async () => {
+    const chunks = [
+      chunk("file", { data: new Uint8Array(), mimeType: "image/png" }),
+    ];
+    let events: unknown;
+    const warnings = await warningsOf(async () => {
+      events = await rendered(chunks);
+    });
+    assert.deepEqual(events, []);
+    assert.deepEqual(warnings, [
+      "Skipped an empty file from the model: image.png",
+    ]);
+  });
+
   test("yields a model-generated file with a synthesized name", async () => {
     const chunks = [
       chunk("file", { data: "aGk=", base64: "aGk=", mimeType: "image/png" }),
@@ -259,7 +348,9 @@ describe("renderableEvents", () => {
   ];
   for (const [mimeType, name] of nameByMimeType) {
     test(`synthesizes the name ${name} from the media type ${mimeType}`, async () => {
-      const chunks = [chunk("file", { data: "aGk=", mimeType })];
+      const chunks = [
+        chunk("file", { data: "aGk=", base64: "aGk=", mimeType }),
+      ];
       assert.deepEqual(await rendered(chunks), [
         { file: { name, bytes: "aGk=" } },
       ]);

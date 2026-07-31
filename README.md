@@ -19,7 +19,7 @@ See [`examples/agent`](examples/agent) — the smallest complete agent built on 
 
 ## API
 
-The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, three the outbound stream.
+The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, two the outbound stream.
 
 ### Inbound
 
@@ -41,17 +41,9 @@ Video is the exception, and the wire is not the reason: `@ai-sdk/amazon-bedrock`
 
 Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
 
-#### Payloads that violate the contract
+#### What arrives is taken as correct
 
-Both functions check the payload against [Welt's published schema](https://github.com/iwamot/welt/blob/main/schema/request-payload.schema.json) and decode what it vouched for. A violation throws a `WireContractError`, which names where it broke:
-
-```
-$[1].content[0].image.source.bytes: must NOT have fewer than 1 characters
-```
-
-Nothing else is checked. The base64 is the one thing the schema annotates without asserting, and it goes on untouched — whatever decodes it downstream is what refuses it.
-
-Welt does not send a payload that fails this, so a throw means the caller is not Welt or Welt has a bug; either way, decoding what is left would hand the agent a conversation with a turn missing.
+Welt builds the payload and checks its own output against the wire contract before releasing it, so these two functions do no checking of their own. Their parameter types — `WireMessage[]` and `Record<string, string>` — say what arrives, and the host app asserts the payload is Welt's where it enters (see the [example agent](examples/agent)). A payload that departs from the contract is a bug on the sending side rather than an input to guard against, and it surfaces as an ordinary error from whatever touches it first.
 
 ### Outbound
 
@@ -97,19 +89,11 @@ toModelOutput: (output) => output,
 
 Uploaded names come from the `filename`, and it is yours to pick — nothing else in the run competes for it; left off, the upload falls back to the media type (`file.csv`, `image.png`). The model sees another name on the file itself, because Mastra drops the `filename` from tool result content on the way to the model and the Bedrock provider falls back to naming the document it builds (`document-1`) — its handle on the document rather than a filename. So a tool that wants the model to use the upload name says it in the text part, as above, and the [example agent](examples/agent) adds a line to its instructions to keep the model from repeating the internal one.
 
-#### `fileEvent(name, data)`
-
-Builds the same `file` event from a filename and raw bytes, for the files the host app attaches itself. Yield it alongside the reduced stream:
-
-```ts
-yield fileEvent("report.csv", csvBytes);
-```
-
-A nameless file throws a `WireContractError`, since Welt drops one. Tools have no use for it — they hand files to the model as tool-result content, and `filesFrom` decides which of those reach the thread.
+Each event carries only what Welt reads — a `current_tool_use` is the name and id behind the indicator, a `tool_result` the id and status — so tool arguments and tool output stay off the wire. An event with nothing to render is not sent at all: a text chunk the model left empty, a file that points at its bytes by URL rather than carrying them, and a file with no bytes, which Slack refuses and fails the whole reply with. The empty one leaves a [process warning](https://nodejs.org/api/process.html#event-warning) behind, naming what returned it.
 
 #### `interruptReason(message, options, input)`
 
-Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt); omitted fields keep Welt's defaults. What it builds is checked against Welt's [reply schema](https://github.com/iwamot/welt/blob/main/schema/reply-events.schema.json) before it is returned, so a typo throws a `WireContractError` instead of a silent fallback to Welt's default rendering:
+Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt), typed as `OptionSpec` and `InputSpec`, and omitted fields keep Welt's defaults:
 
 ```ts
 await context.agent.suspend(
@@ -123,6 +107,8 @@ await context.agent.suspend(
   ),
 );
 ```
+
+Building the reason through this helper is what makes a typo an error. A tool that declares no `suspendSchema` takes its suspend payload as `unknown`, so an object literal handed to `suspend` directly is checked by nothing, and Welt's reaction to a reason it cannot match is its default **Approve** / **Deny** buttons — no error, no log, just widgets you did not ask for. The typed parameters catch a misspelled key before the run; the checks inside catch it in the runs the types miss, since TypeScript's excess-property check fires on an object literal written at the call site and not on one that reached it through a variable. A wrong type throws a `TypeError`, an unknown key or an empty required string an `Error`. What they check is the shape, not the size: how many buttons one Slack block holds, and how long a button value may be, are Welt's to enforce.
 
 ## Working with interrupts
 
