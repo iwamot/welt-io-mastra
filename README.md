@@ -17,6 +17,22 @@ npm install @welt-io/mastra
 
 See [`examples/agent`](examples/agent) — the smallest complete agent built on this package (text streaming, tool use, file output, file input, and human-approval tools). The sections below explain the adapters it wires in.
 
+## Supported Versions
+
+### Welt
+
+Welt releases first; @welt-io/mastra follows, mirroring the minor version. While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y — other combinations may work, but come with no guarantee.
+
+### Mastra
+
+| Package | Installable | Version CI runs against |
+|---|---|---|
+| `@mastra/core` | `>=1.0.0` | <!-- renovate: datasource=npm depName=@mastra/core --> `1.55.0` |
+
+Every push and pull request runs the suite at both ends of that range. That is best effort rather than a guarantee: the floor is where the suite was last seen to pass, so a later release may raise it, and no ceiling is declared at all.
+
+Something misbehaving inside that range is worth an [issue](https://github.com/iwamot/welt-io-mastra/issues).
+
 ## API
 
 The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, two the outbound stream.
@@ -116,10 +132,6 @@ Building the reason through this helper is what makes a typo an error. A tool th
 
 - **Register the agent on a `Mastra` instance** and drive it through `mastra.getAgent(...)`. That instance is what holds the suspended run, so an agent built and streamed on its own has nothing for `resumeStream` to find.
 - **Code before `suspend` runs again on resume.** Mastra re-executes the tool from its start, and the resumed pass gets the human's answer but not the suspend payload it was answering. So work that must not run twice — side effects, or work that must match what the human approved — belongs in the `resumeData === undefined` branch, and whatever the second pass needs from it has to outlive the pause. A map keyed on `context.agent.toolCallId`, the same id on both passes, is enough: it lives in the same process as the suspended run it pairs with. The [example agent](examples/agent)'s `sample_draft_report` shows the pattern.
-
-## Supported Versions
-
-Welt releases first; @welt-io/mastra follows, mirroring the minor version. While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y — other combinations may work, but come with no guarantee.
 
 ## License
 
