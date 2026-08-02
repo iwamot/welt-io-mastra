@@ -21,7 +21,7 @@ See [`examples/agent`](examples/agent) — the smallest complete agent built on 
 
 ### Welt
 
-Welt releases first; @welt-io/mastra follows, mirroring the minor version. While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y — other combinations may work, but come with no guarantee.
+While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y. From 1.0 on, a release supports any Welt release that shares its major version, and the minor versions move independently. Support is best effort either way, and other combinations come with no guarantee.
 
 ### Mastra
 
