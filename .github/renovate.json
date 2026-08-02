@@ -9,12 +9,5 @@
     "**/test/**",
     "**/tests/**",
     "**/__fixtures__/**"
-  ],
-  "packageRules": [
-    {
-      "description": "Mastra's remap to AI SDK v7 (LanguageModelV4) providers covers message file parts but not tool-result content, so tool-result media parts arrive in Mastra's internal file-data shape and v7 providers reject them — keep the v6 line until the remap covers tool messages.",
-      "matchPackageNames": ["@ai-sdk/amazon-bedrock"],
-      "allowedVersions": "<5"
-    }
   ]
 }
