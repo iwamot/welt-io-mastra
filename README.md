@@ -51,8 +51,6 @@ Turns Welt's Converse-shaped messages — built from the Slack thread, file byte
 
 Each file-carrying part gets the media type an AI SDK part takes in place of the Converse format token — every format token the wire carries has one. The base64 travels on as it arrived, since an AI SDK part takes the string itself.
 
-Video is the exception, and the wire is not the reason: `@ai-sdk/amazon-bedrock` sends `image/*` to a Converse `image` block and everything else to a `document` block, and its media-type table holds no video type, so a video upload throws `Unsupported file mime type: video/mp4` while the request is being built — whatever the model. Leave `video` out of Welt's [`FILE_INPUT_MODALITIES`](https://github.com/iwamot/welt/blob/main/docs/files.md) when the agent runs on Bedrock.
-
 #### `decodeInterruptResponses(responses)`
 
 Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
