@@ -144,7 +144,10 @@ const sampleDraftReport = createTool({
   // run pauses to show it for the publish decision, and approval returns
   // the approved draft as a markdown file.
   execute: async (input, context) => {
-    const toolCallId = context?.agent?.toolCallId ?? "";
+    const toolCallId = context?.agent?.toolCallId;
+    if (toolCallId === undefined) {
+      throw new Error("This tool needs its tool call id to keep the draft.");
+    }
     const answer = context?.agent?.resumeData;
     if (answer === undefined) {
       // Drafting belongs in this branch alone: Mastra re-executes the tool
@@ -168,7 +171,13 @@ const sampleDraftReport = createTool({
       );
       return undefined;
     }
-    const draft = drafts.get(toolCallId) ?? "";
+    // The draft is what the human approved, so there is nothing to fall back
+    // to: publishing an empty file — or a redraft — would publish something
+    // other than what they saw.
+    const draft = drafts.get(toolCallId);
+    if (draft === undefined) {
+      throw new Error("The approved draft is gone; it lives in this process.");
+    }
     drafts.delete(toolCallId);
     if (answer === "y") {
       return fileContent(
