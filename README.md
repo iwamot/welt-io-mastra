@@ -57,7 +57,9 @@ Turns Welt's resume payload — a mapping of interrupt id to the answer a human 
 
 #### What arrives is taken as correct
 
-Welt builds the payload and checks its own output against the wire contract before releasing it, so these two functions do no checking of their own. Their parameter types — `WireMessage[]` and `Record<string, string>` — say what arrives, and the host app asserts the payload is Welt's where it enters (see the [example agent](examples/agent)). A payload that departs from the contract is a bug on the sending side rather than an input to guard against, and it surfaces as an ordinary error from whatever touches it first.
+Welt builds the payload and checks its own output against the wire contract before releasing it, so these two functions do no field validation of their own. Their parameter types — `WireMessage[]` and `Record<string, string>` — say what arrives, and the host app asserts the payload is Welt's where it enters (see the [example agent](examples/agent)). A payload that departs from the contract is a bug on the sending side rather than an input to guard against, and it surfaces as an ordinary error from whatever touches it first.
+
+The one thing `decodeMessages` refuses outright is a content block of a kind Welt never sends. A `messages` turn carries only `text`, `image`, `document`, and `video` blocks; a `toolUse` or `toolResult` block is not a malformed one of those but a forged conversation turn, and rebuilt into history it would let a caller that is not Welt put words the model treats as its own past tool calls and their results into the run. It throws an `Error`. This is a trust-boundary check, not the field validation the contract otherwise saves you from.
 
 ### Outbound
 
