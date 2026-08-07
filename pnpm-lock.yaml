@@ -39,8 +39,8 @@ importers:
         specifier: workspace:*
         version: link:../..
       bedrock-agentcore:
-        specifier: 0.4.2
-        version: 0.4.2
+        specifier: 0.4.3
+        version: 0.4.3
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -588,8 +588,8 @@ packages:
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
-  bedrock-agentcore@0.4.2:
-    resolution: {integrity: sha512-72gcLfDxik9Rv09HxQ/3WT5eerseif2XoJ5AOymws+FpmsuvxNUMYSnJJKb31fdwezzAFO8FpI9I9Hf7mgkXRA==}
+  bedrock-agentcore@0.4.3:
+    resolution: {integrity: sha512-Ft66jLjMKlsP3/efepYrhoGU1+d2ccbpLiBU0PXtn1BCI1Lj2ounmi+pJRyaNDrtdJm9zjbdy+aKzpGZ/QQRMQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@strands-agents/sdk': '>=1.5.0'
@@ -2162,7 +2162,7 @@ snapshots:
 
   bail@2.0.2: {}
 
-  bedrock-agentcore@0.4.2:
+  bedrock-agentcore@0.4.3:
     dependencies:
       '@aws-crypto/sha256-js': 5.2.0
       '@aws-sdk/client-bedrock-agentcore': 3.1098.0
