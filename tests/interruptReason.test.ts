@@ -135,13 +135,15 @@ describe("interruptReason", () => {
     );
   });
 
-  test("refuses a style Welt does not render", () => {
-    const option = { value: "y", style: "warning" } as unknown as OptionSpec;
-    rejectsValue(
-      () => interruptReason("m", [option]),
-      /must be "primary" or "danger"/,
-    );
-  });
+  for (const style of ["warning", null]) {
+    test(`refuses the style ${JSON.stringify(style)}, which Welt does not render`, () => {
+      const option = { value: "y", style } as unknown as OptionSpec;
+      rejectsValue(
+        () => interruptReason("m", [option]),
+        /must be "primary" or "danger"/,
+      );
+    });
+  }
 
   // --- what the type checker cannot reach ------------------------------
   //
@@ -203,6 +205,10 @@ describe("interruptReason", () => {
   const badOptionValues: [unknown, RegExp][] = [
     [{ value: 42 }, /an option's value must be a string, not a number/],
     [{ value: "y", label: 42 }, /an option's label must be a string/],
+    [
+      { value: "y", label: null },
+      /an option's label must be a string, not null/,
+    ],
   ];
   for (const [option, reason] of badOptionValues) {
     test(`refuses the option ${JSON.stringify(option)}`, () => {
@@ -222,7 +228,9 @@ describe("interruptReason", () => {
 
   const badInputValues: [unknown, RegExp][] = [
     [{ label: 42 }, /input's label must be a string/],
+    [{ label: null }, /input's label must be a string, not null/],
     [{ multiline: "yes" }, /input's multiline must be a boolean, not a string/],
+    [{ multiline: null }, /input's multiline must be a boolean, not null/],
   ];
   for (const [input, reason] of badInputValues) {
     test(`refuses the input ${JSON.stringify(input)}`, () => {
