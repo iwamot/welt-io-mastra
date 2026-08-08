@@ -20,7 +20,7 @@ Fetch the agent and run it with Node.js 24, which runs TypeScript directly:
 ```sh
 curl -O https://raw.githubusercontent.com/iwamot/welt-io-mastra/main/examples/agent/src/main.ts
 echo '{"type":"module"}' > package.json
-npm install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock@4 @aws-sdk/credential-providers zod bedrock-agentcore
+npm install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers zod bedrock-agentcore
 MODEL_ID=global.anthropic.claude-sonnet-4-6 AWS_REGION=us-west-2 node main.ts
 ```
 
@@ -38,14 +38,12 @@ cd WeltExample
 agentcore add agent --name WeltExample --type create --build CodeZip --language TypeScript --framework Strands --model-provider Bedrock --memory none
 
 curl -o app/WeltExample/main.ts https://raw.githubusercontent.com/iwamot/welt-io-mastra/main/examples/agent/src/main.ts
-npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock@4 @aws-sdk/credential-providers zod
+npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers zod
 
 agentcore deploy
 ```
 
 The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model. Note the agent runtime ARN from the deploy output: Welt's `AGENT_ARN` points at it.
-
-The Bedrock provider is pinned to its AI SDK v6 line (`@ai-sdk/amazon-bedrock@4`): with the v7 line (5.x), Mastra 1.52 hands the provider tool-result media parts in its internal `file-data` shape, which v7 providers reject — a tool that returns a file crashes the run.
 
 ## Tools
 
