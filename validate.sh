@@ -9,11 +9,7 @@ mise install
 # TypeScript
 aube install --frozen-lockfile
 aube licenses
-# 1119676 is @ai-sdk/provider-utils (GHSA-866g-f22w-33x8, low), reached through
-# the @mastra/core devDependency: Mastra pins several AI SDK majors side by side,
-# so none of its slots can take the patched version. The registry reports this
-# advisory under its numeric id only. Drop the ignore once Mastra's pins move on.
-aube audit --fix update --ignore-unfixable --ignore 1119676
+aube audit --fix update --ignore-unfixable
 aube run check:write
 aube run build
 aube run typecheck
