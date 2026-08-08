@@ -6,7 +6,7 @@ lockfile = true
 [tools]
 biome = "2.4.13"
 node = "24.19.0"
-"aqua:jdx/aube" = "1.37.0"
+"aqua:jdx/aube" = "1.38.0"
 
 [task_config]
 includes = [
