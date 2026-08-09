@@ -427,8 +427,8 @@ describe("renderableEvents", () => {
       'May I run `deploy`?\n```\n{\n  "env": "prod"\n}\n```',
     );
     assert.deepEqual(reason.options, [
-      { value: "y", label: "Approve", style: "primary" },
-      { value: "n", label: "Deny" },
+      { value: "Approve", style: "primary" },
+      { value: "Deny" },
     ]);
     assert.equal(reason.input, undefined);
   });
