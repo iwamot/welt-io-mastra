@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import type { InputSpec, OptionSpec } from "../src/index.ts";
+import type { InputSpec, JsonValue, OptionSpec } from "../src/index.ts";
 import { interruptReason } from "../src/index.ts";
 
 /** Assert that a value of the wrong type is refused, and why. */
@@ -60,6 +60,28 @@ describe("interruptReason", () => {
     );
   });
 
+  const jsonValues: JsonValue[] = [
+    true,
+    false,
+    null,
+    42,
+    "",
+    ["a"],
+    { d: "h" },
+  ];
+  for (const value of jsonValues) {
+    test(`carries the option value ${JSON.stringify(value)}`, () => {
+      const reason = interruptReason("m", [{ value, label: "Pick" }]);
+      assert.deepEqual(reason.options, [{ value, label: "Pick" }]);
+    });
+  }
+
+  test("builds a message alone, answered by Welt's default buttons", () => {
+    assert.deepEqual(interruptReason("Generating an image. OK?"), {
+      message: "Generating an image. OK?",
+    });
+  });
+
   test("copies the options it was handed", () => {
     const options: OptionSpec[] = [{ value: "y" }];
     const reason = interruptReason("m", options);
@@ -102,10 +124,6 @@ describe("interruptReason", () => {
     );
   });
 
-  test("refuses a reason with neither widget", () => {
-    rejectsValue(() => interruptReason("m"), /needs options, input, or both/);
-  });
-
   test("refuses empty options", () => {
     rejectsValue(() => interruptReason("m", []), /options must not be empty/);
   });
@@ -114,13 +132,6 @@ describe("interruptReason", () => {
     rejectsValue(
       () => interruptReason("m", [{} as OptionSpec]),
       /an option needs a value/,
-    );
-  });
-
-  test("refuses an empty option value", () => {
-    rejectsValue(
-      () => interruptReason("m", [{ value: "" }]),
-      /an option's value must not be empty/,
     );
   });
 
@@ -203,7 +214,8 @@ describe("interruptReason", () => {
   }
 
   const badOptionValues: [unknown, RegExp][] = [
-    [{ value: 42 }, /an option's value must be a string, not a number/],
+    [{ value: () => "y" }, /an option's value must be JSON, not a function/],
+    [{ value: [1, undefined] }, /an option's value must be JSON, not an array/],
     [{ value: "y", label: 42 }, /an option's label must be a string/],
     [
       { value: "y", label: null },

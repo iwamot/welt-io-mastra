@@ -18,6 +18,7 @@ import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
 import type {
+  InterruptAnswer,
   RenderableEvent,
   ToolResultContent,
   WireMessage,
@@ -111,19 +112,16 @@ const sampleDangerousAction = createTool({
       await context?.agent?.suspend(
         interruptReason(
           `May I run this dangerous action? — ${input.action}`,
-          [
-            { value: "y", label: "Approve", style: "primary" },
-            { value: "n", label: "Cancel" },
-          ],
+          [{ value: "Approve", style: "primary" }, { value: "Cancel" }],
           { label: "Or type your answer" },
         ),
       );
       return undefined;
     }
-    if (answer === "y") {
+    if (answer === "Approve") {
       return `Ran: ${input.action}. (This example doesn't actually run anything.)`;
     }
-    if (answer === "n") {
+    if (answer === "Cancel") {
       return "The action was cancelled by the user.";
     }
     return `The action was not run. The user answered: ${answer}`;
@@ -162,10 +160,7 @@ const sampleDraftReport = createTool({
       await context?.agent?.suspend(
         interruptReason(
           `May I publish this draft?\n\n\`\`\`\n${draft}\`\`\``,
-          [
-            { value: "y", label: "Publish", style: "primary" },
-            { value: "n", label: "Discard" },
-          ],
+          [{ value: "Publish", style: "primary" }, { value: "Discard" }],
           { label: "Or type your answer" },
         ),
       );
@@ -179,7 +174,7 @@ const sampleDraftReport = createTool({
       throw new Error("The approved draft is gone; it lives in this process.");
     }
     drafts.delete(toolCallId);
-    if (answer === "y") {
+    if (answer === "Publish") {
       return fileContent(
         "The user answered the publish question in the thread by pressing" +
           " Publish, so this draft is already published there as report.md." +
@@ -189,7 +184,7 @@ const sampleDraftReport = createTool({
         new TextEncoder().encode(draft),
       );
     }
-    if (answer === "n") {
+    if (answer === "Discard") {
       return textContent(
         "The user discarded the draft; nothing was published.",
       );
@@ -289,7 +284,7 @@ async function* replies(
  */
 type WeltPayload =
   | { messages: WireMessage[] }
-  | { interrupt_responses: Record<string, string> };
+  | { interrupt_responses: Record<string, InterruptAnswer> };
 
 const app = new BedrockAgentCoreApp({
   invocationHandler: {

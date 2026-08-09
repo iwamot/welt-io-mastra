@@ -53,7 +53,7 @@ Each file-carrying part gets the media type an AI SDK part takes in place of the
 
 #### `decodeInterruptResponses(responses)`
 
-Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
+Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose and the widget it came from — into `{toolCallId, answer}` pairs, the answer travelling on as the value it was given, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
 
 #### What arrives is taken as correct
 
@@ -78,7 +78,7 @@ Reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStre
 A run that stops for human input ends its stream with one `interrupt` event per suspended tool call; agents that do not suspend see no change. Two suspension flavors map:
 
 - An explicit `suspend(...)` in a tool passes its suspend payload through as the interrupt reason unmodified — build it with `interruptReason` below to control the widgets. Declare `resumeSchema: z.string()` on the tool: the human's answer comes back as the resume data.
-- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason with **Approve** / **Deny** buttons whose `y` / `n` answer the host app maps to `approveToolCall` / `declineToolCall`.
+- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason with **Approve** / **Deny** buttons whose `"Approve"` / `"Deny"` answer the host app maps to `approveToolCall` / `declineToolCall`.
 
 A tool hands files to the model for either of two reasons — to have it read them, or to give them to the human — and only the agent knows which is which, so name the tools whose files belong in the thread:
 
@@ -109,15 +109,15 @@ Each event carries only what Welt reads — a `current_tool_use` is the name and
 
 #### `interruptReason(message, options, input)`
 
-Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt), typed as `OptionSpec` and `InputSpec`, and omitted fields keep Welt's defaults:
+Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. An option's `value` is any JSON value, and the pressed button answers with it as it was declared; with neither widget the message renders as itself and Welt's default **Approve** / **Deny** buttons answer it. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt), typed as `OptionSpec` and `InputSpec`, and omitted fields keep Welt's defaults:
 
 ```ts
 await context.agent.suspend(
   interruptReason(
     "Deploy to prod?",
     [
-      { value: "y", label: "Deploy", style: "primary" },
-      { value: "n", label: "Cancel" },
+      { value: "Deploy", style: "primary" },
+      { value: "Cancel" },
     ],
     { label: "Or type your answer" },
   ),
