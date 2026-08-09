@@ -18,6 +18,7 @@ import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
 import type {
+  InterruptAnswer,
   RenderableEvent,
   ToolResultContent,
   WireMessage,
@@ -283,7 +284,7 @@ async function* replies(
  */
 type WeltPayload =
   | { messages: WireMessage[] }
-  | { interrupt_responses: Record<string, string> };
+  | { interrupt_responses: Record<string, InterruptAnswer> };
 
 const app = new BedrockAgentCoreApp({
   invocationHandler: {

@@ -53,7 +53,7 @@ Each file-carrying part gets the media type an AI SDK part takes in place of the
 
 #### `decodeInterruptResponses(responses)`
 
-Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose — into `{toolCallId, answer}` pairs, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
+Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose and the widget it came from — into `{toolCallId, answer}` pairs, the answer travelling on as the value it was given, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the host app stashes when an interrupt event goes by (see the [example agent](examples/agent)).
 
 #### What arrives is taken as correct
 

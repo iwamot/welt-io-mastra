@@ -217,6 +217,12 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+/** One answer of Welt's resume payload: what it was, and where from. */
+export interface InterruptAnswer {
+  value: JsonValue;
+  source: "option" | "input";
+}
+
 /** One decoded interrupt answer: the suspended tool call and the human's answer. */
 export interface InterruptResponse {
   toolCallId: string;
@@ -227,19 +233,25 @@ export interface InterruptResponse {
  * Decode Welt's interrupt answers into Mastra resume inputs.
  *
  * Welt resumes an interrupted run with a payload mapping each interrupt
- * id to the answer a human chose in the thread. `renderableEvents` uses
- * the suspended tool call's id as the interrupt id, so each entry here
- * feeds one `Agent.resumeStream(answer, { runId, toolCallId })` call.
+ * id to the answer a human chose in the thread and the widget it came
+ * from. `renderableEvents` uses the suspended tool call's id as the
+ * interrupt id, so each entry here feeds one
+ * `Agent.resumeStream(answer, { runId, toolCallId })` call.
+ *
+ * The answer travels on as the value it was given, since what it means is
+ * for the suspended tool to decide. The widget it came from is Welt's own
+ * vocabulary, and a tool that reads its own option values already knows
+ * which of them it declared.
  *
  * @param responses - The `interrupt_responses` value of Welt's payload.
  * @returns One entry per answered interrupt, in payload order.
  */
 export function decodeInterruptResponses(
-  responses: Readonly<Record<string, JsonValue>>,
+  responses: Readonly<Record<string, InterruptAnswer>>,
 ): InterruptResponse[] {
   return Object.entries(responses).map(([toolCallId, answer]) => ({
     toolCallId,
-    answer,
+    answer: answer.value,
   }));
 }
 
