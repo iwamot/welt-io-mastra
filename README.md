@@ -2,6 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/%40welt-io%2Fmastra.svg)](https://www.npmjs.com/package/@welt-io/mastra)
 [![node](https://img.shields.io/node/v/%40welt-io%2Fmastra.svg)](https://www.npmjs.com/package/@welt-io/mastra)
+[![@mastra/core](https://img.shields.io/npm/dependency-version/%40welt-io%2Fmastra/peer/%40mastra%2Fcore.svg)](https://www.npmjs.com/package/@mastra/core)
 
 The [Mastra](https://mastra.ai/) (TypeScript) adapter for [Welt](https://github.com/iwamot/welt)'s wire contract.
 
@@ -25,11 +26,9 @@ While both are 0.x, a @welt-io/mastra 0.Y release supports Welt v0.Y. From 1.0 o
 
 ### Mastra
 
-| Package | Installable | Version CI runs against |
-|---|---|---|
-| `@mastra/core` | `>=1.0.0` | <!-- renovate: datasource=npm depName=@mastra/core --> `1.57.0` |
+The badge at the top states the range this release installs against. Every push and pull request runs the suite at both ends of it: the declared floor, and the newest release CI has picked up. That is best effort rather than a guarantee — the floor is where the suite was last seen to pass, so a later release may raise it, and no ceiling is declared at all.
 
-Every push and pull request runs the suite at both ends of that range. That is best effort rather than a guarantee: the floor is where the suite was last seen to pass, so a later release may raise it, and no ceiling is declared at all.
+The badge follows the current release. For the range an older release declared, read that release's own metadata on npm.
 
 Something misbehaving inside that range is worth an [issue](https://github.com/iwamot/welt-io-mastra/issues).
 
