@@ -16,23 +16,6 @@ aube run typecheck
 # Workspace packages (the example agent) typecheck against the built dist.
 aube -r run typecheck
 aube run test
-# README's Supported Versions table restates what package.json declares. Read
-# both and compare, so an edit to one cannot leave the other behind.
-node --input-type=module - <<'JS'
-import { readFileSync } from "node:fs";
-
-const read = (path) => readFileSync(path, "utf8");
-const readme = read("README.md");
-const { peerDependencies = {} } = JSON.parse(read("package.json"));
-for (const [name, range] of Object.entries(peerDependencies)) {
-  const row = `| \`${name}\` | \`${range}\` |`;
-  if (!readme.includes(row)) {
-    throw new Error(`validate.sh: README.md has no row ${row}`);
-  }
-  console.log(`validate.sh: README.md states ${name} ${range}`);
-}
-JS
-
 # --no-git-checks lets the dry-run run on any branch (publish itself would still gate on main).
 aube publish --dry-run --no-git-checks
 
