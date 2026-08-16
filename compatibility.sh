@@ -34,9 +34,10 @@ import { decodeMessages, interruptReason, renderableEvents } from "@welt-io/mast
 assert.deepEqual(decodeMessages([{ role: "user", content: [{ text: "hi" }] }]), [
   { role: "user", content: [{ type: "text", text: "hi" }] },
 ]);
-assert.deepEqual(interruptReason("Deploy?", [{ value: "y" }]), {
+assert.deepEqual(interruptReason({ message: "Deploy?", approve: {}, reject: {} }), {
   message: "Deploy?",
-  options: [{ value: "y" }],
+  approve: {},
+  reject: {},
 });
 const events = [];
 for await (const event of renderableEvents(

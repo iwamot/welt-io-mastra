@@ -270,37 +270,58 @@ export type OptionSpec = {
   style?: "primary" | "danger";
 };
 
+/** The look of the approve or reject button, which Welt words itself. */
+export type DecisionSpec = {
+  label?: string;
+  style?: "primary" | "danger";
+};
+
 /** The free-text field of a structured interrupt reason. */
 export type InputSpec = {
   label?: string;
   multiline?: boolean;
 };
 
+/** What a reason asks Welt to render. */
+export type ReasonSpec = {
+  message: string;
+  approve?: DecisionSpec;
+  reject?: DecisionSpec;
+  options?: readonly OptionSpec[];
+  input?: InputSpec;
+};
+
 /** The structured interrupt reason shape Welt renders as widgets. */
 type InterruptReason = {
   message: string;
+  approve?: DecisionSpec;
+  reject?: DecisionSpec;
   options?: OptionSpec[];
   input?: InputSpec;
 };
 
+const REASON_KEYS = ["message", "approve", "reject", "options", "input"];
 const OPTION_KEYS = ["value", "label", "style"];
+const DECISION_KEYS = ["label", "style"];
 const INPUT_KEYS = ["label", "multiline"];
 
 /**
  * Build an interrupt reason that Welt renders as the specified widgets.
  *
- * Welt renders this shape as `message` followed by one button per option
- * (`options`), a free-text field whose submitted text becomes the
- * interrupt's response (`input`), or both — whichever answer comes
- * first, a pressed button or the submitted text, settles the question.
- * With neither, the message renders as itself and Welt's default
- * Approve / Deny buttons answer it.
+ * Welt renders this shape as `message` followed by the widgets the
+ * remaining arguments ask for: the approve and reject buttons Welt words
+ * and values itself (`approve`, `reject`), one button per option
+ * (`options`), and a free-text field whose submitted text becomes the
+ * interrupt's response (`input`). They combine — whichever answer comes
+ * first, a pressed button or the submitted text, settles the question —
+ * and with none of them the message renders as itself and Welt's default
+ * buttons answer it.
  *
  * Building the reason through this helper is what makes a typo an error.
  * A tool that declares no `suspendSchema` takes its suspend payload as
  * `unknown`, so an object literal handed to `suspend` directly is checked
  * by nothing, and Welt's reaction to a reason it cannot match is its
- * default Approve / Deny buttons — no error, no log, just widgets the
+ * default buttons — no error, no log, just widgets the
  * author did not ask for. The typed parameters here catch a misspelled key
  * before the run, and the checks below catch it in the runs the types
  * miss: TypeScript's excess-property check fires on an object literal
@@ -312,26 +333,33 @@ const INPUT_KEYS = ["label", "multiline"];
  * be) are Welt's to enforce, and a copy of them here would be four copies
  * to keep in step with a number only Welt knows.
  *
- * @param message - The text Welt shows above the widgets.
- * @param options - One entry per button: a required `value` (any JSON
- *   value, which the suspended tool receives as the answer when the
- *   button is pressed), an optional `label` (the button text; omitted,
- *   Welt shows the value), and an optional `style` ("primary" or
- *   "danger"). Omitted, no buttons render.
- * @param input - The free-text field: an optional `label` (the field's
- *   label) and an optional `multiline` (whether the field accepts multiple
- *   lines) — `{}` takes Welt's defaults for both. Omitted, no field
- *   renders.
+ * @param spec - What the question asks for. `message` is the text Welt
+ *   shows above the widgets. `approve` and `reject` are the buttons Welt
+ *   words itself (each an optional `label` and `style` — `{}` takes
+ *   Welt's own wording), which the suspended tool receives as `true` and
+ *   `false`. `options` is one entry per button of your own: a required
+ *   `value` (any JSON value, received as the answer when the button is
+ *   pressed), an optional `label` (the button text; omitted, Welt shows
+ *   the value), and an optional `style`. `input` is the free-text field
+ *   (an optional `label` and an optional `multiline` — `{}` takes Welt's
+ *   defaults for both). An omitted key renders no widget.
  * @returns The reason to pass to the tool execution context's `suspend`.
  * @throws {TypeError} If a value is of the wrong type.
  * @throws {Error} If a key is unknown or a required string is empty.
  */
-export function interruptReason(
-  message: string,
-  options?: readonly OptionSpec[],
-  input?: InputSpec,
-): InterruptReason {
+export function interruptReason(spec: ReasonSpec): InterruptReason {
+  if (!isRecord(spec)) {
+    throw new TypeError(`the reason must be an object, not ${typeName(spec)}`);
+  }
+  refuseUnknownKeys(spec, REASON_KEYS, "the reason");
+  const { message, approve, reject, options, input } = spec;
   const reason: InterruptReason = { message: checkedMessage(message) };
+  if (approve !== undefined) {
+    reason.approve = checkedDecision(approve, "approve");
+  }
+  if (reject !== undefined) {
+    reason.reject = checkedDecision(reject, "reject");
+  }
   if (options !== undefined) {
     reason.options = checkedOptions(options);
   }
@@ -339,6 +367,26 @@ export function interruptReason(
     reason.input = checkedInput(input);
   }
   return reason;
+}
+
+/** Check the look of the approve or reject button. */
+function checkedDecision(spec: unknown, subject: string): DecisionSpec {
+  if (!isRecord(spec)) {
+    throw new TypeError(`${subject} must be an object, not ${typeName(spec)}`);
+  }
+  refuseUnknownKeys(spec, DECISION_KEYS, subject);
+  const { label, style } = spec;
+  const checked: DecisionSpec = {};
+  if (label !== undefined) {
+    checked.label = checkedLabel(label, `${subject}'s label`);
+  }
+  if (style !== undefined) {
+    if (style !== "primary" && style !== "danger") {
+      throw new Error(`${subject}'s style must be "primary" or "danger"`);
+    }
+    checked.style = style;
+  }
+  return checked;
 }
 
 /** Check a reason's message. */
@@ -556,8 +604,9 @@ export interface RenderableEventsOptions {
  * (`interrupt` — a suspended tool call's id and suspend payload, the
  * latter passed through unmodified since interpreting a reason is the
  * renderer's job; a tool call awaiting `requireToolApproval` gets a
- * synthesized reason with Approve/Deny buttons whose `"Approve"` /
- * `"Deny"` answer maps to `approveToolCall` / `declineToolCall`), and
+ * synthesized reason asking for Welt's own approve and reject buttons,
+ * whose `true` / `false` answer maps to `approveToolCall` /
+ * `declineToolCall`), and
  * failures (`error`, from
  * error and tripwire chunks). Everything else is dropped.
  *
@@ -770,10 +819,12 @@ function approvalReason(
   const heading =
     toolName.length > 0 ? `May I run \`${toolName}\`?` : "May I run this tool?";
   const rendered = renderedArgs(args);
-  return interruptReason(
-    rendered === null ? heading : `${heading}\n\`\`\`\n${rendered}\n\`\`\``,
-    [{ value: "Approve", style: "primary" }, { value: "Deny" }],
-  );
+  return interruptReason({
+    message:
+      rendered === null ? heading : `${heading}\n\`\`\`\n${rendered}\n\`\`\``,
+    approve: {},
+    reject: {},
+  });
 }
 
 function renderedArgs(args: Record<string, unknown>): string | null {

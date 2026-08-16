@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import type { InputSpec, JsonValue, OptionSpec } from "../src/index.ts";
+import type {
+  DecisionSpec,
+  InputSpec,
+  JsonValue,
+  OptionSpec,
+  ReasonSpec,
+} from "../src/index.ts";
 import { interruptReason } from "../src/index.ts";
 
 /** Assert that a value of the wrong type is refused, and why. */
@@ -26,14 +32,17 @@ function rejectsValue(build: () => unknown, reason: RegExp) {
 
 describe("interruptReason", () => {
   test("builds a message with options", () => {
-    assert.deepEqual(interruptReason("Deploy?", [{ value: "y" }]), {
-      message: "Deploy?",
-      options: [{ value: "y" }],
-    });
+    assert.deepEqual(
+      interruptReason({ message: "Deploy?", options: [{ value: "y" }] }),
+      {
+        message: "Deploy?",
+        options: [{ value: "y" }],
+      },
+    );
   });
 
   test("builds a message with an input field", () => {
-    assert.deepEqual(interruptReason("Name?", undefined, {}), {
+    assert.deepEqual(interruptReason({ message: "Name?", input: {} }), {
       message: "Name?",
       input: {},
     });
@@ -41,14 +50,14 @@ describe("interruptReason", () => {
 
   test("builds a message with both widgets", () => {
     assert.deepEqual(
-      interruptReason(
-        "Deploy?",
-        [
+      interruptReason({
+        message: "Deploy?",
+        options: [
           { value: "y", label: "Deploy", style: "primary" },
           { value: "n", label: "Cancel" },
         ],
-        { label: "Or type your answer", multiline: true },
-      ),
+        input: { label: "Or type your answer", multiline: true },
+      }),
       {
         message: "Deploy?",
         options: [
@@ -71,39 +80,48 @@ describe("interruptReason", () => {
   ];
   for (const value of jsonValues) {
     test(`carries the option value ${JSON.stringify(value)}`, () => {
-      const reason = interruptReason("m", [{ value, label: "Pick" }]);
+      const reason = interruptReason({
+        message: "m",
+        options: [{ value, label: "Pick" }],
+      });
       assert.deepEqual(reason.options, [{ value, label: "Pick" }]);
     });
   }
 
   test("builds a message alone, answered by Welt's default buttons", () => {
-    assert.deepEqual(interruptReason("Generating an image. OK?"), {
+    assert.deepEqual(interruptReason({ message: "Generating an image. OK?" }), {
       message: "Generating an image. OK?",
     });
   });
 
   test("copies the options it was handed", () => {
     const options: OptionSpec[] = [{ value: "y" }];
-    const reason = interruptReason("m", options);
+    const reason = interruptReason({ message: "m", options });
     assert.notEqual(reason.options, options);
     assert.deepEqual(reason.options, options);
   });
 
   for (const style of ["primary", "danger"] as const) {
     test(`accepts the ${style} style`, () => {
-      assert.deepEqual(interruptReason("m", [{ value: "v", style }]), {
-        message: "m",
-        options: [{ value: "v", style }],
-      });
+      assert.deepEqual(
+        interruptReason({ message: "m", options: [{ value: "v", style }] }),
+        {
+          message: "m",
+          options: [{ value: "v", style }],
+        },
+      );
     });
   }
 
   for (const multiline of [true, false]) {
     test(`accepts multiline ${multiline}`, () => {
-      assert.deepEqual(interruptReason("m", undefined, { multiline }), {
-        message: "m",
-        input: { multiline },
-      });
+      assert.deepEqual(
+        interruptReason({ message: "m", input: { multiline } }),
+        {
+          message: "m",
+          input: { multiline },
+        },
+      );
     });
   }
 
@@ -112,36 +130,50 @@ describe("interruptReason", () => {
   // A copy of them here would be four copies of a number only Welt knows.
   test("leaves Welt's own rendering caps to Welt", () => {
     const options = Array.from({ length: 26 }, (_, i) => ({ value: `v${i}` }));
-    assert.equal(interruptReason("m", options).options?.length, 26);
-    assert.ok(interruptReason("m", [{ value: "v".repeat(1801) }]));
-    assert.ok(interruptReason("m".repeat(12_001), [{ value: "y" }]));
+    assert.equal(
+      interruptReason({ message: "m", options }).options?.length,
+      26,
+    );
+    assert.ok(
+      interruptReason({ message: "m", options: [{ value: "v".repeat(1801) }] }),
+    );
+    assert.ok(
+      interruptReason({
+        message: "m".repeat(12_001),
+        options: [{ value: "y" }],
+      }),
+    );
   });
 
   test("refuses an empty message", () => {
     rejectsValue(
-      () => interruptReason("", [{ value: "y" }]),
+      () => interruptReason({ message: "", options: [{ value: "y" }] }),
       /message must not be empty/,
     );
   });
 
   test("refuses empty options", () => {
-    rejectsValue(() => interruptReason("m", []), /options must not be empty/);
+    rejectsValue(
+      () => interruptReason({ message: "m", options: [] }),
+      /options must not be empty/,
+    );
   });
 
   test("refuses an option without a value", () => {
     rejectsValue(
-      () => interruptReason("m", [{} as OptionSpec]),
+      () => interruptReason({ message: "m", options: [{} as OptionSpec] }),
       /an option needs a value/,
     );
   });
 
   test("refuses an empty label", () => {
     rejectsValue(
-      () => interruptReason("m", [{ value: "y", label: "" }]),
+      () =>
+        interruptReason({ message: "m", options: [{ value: "y", label: "" }] }),
       /an option's label must not be empty/,
     );
     rejectsValue(
-      () => interruptReason("m", undefined, { label: "" }),
+      () => interruptReason({ message: "m", input: { label: "" } }),
       /input's label must not be empty/,
     );
   });
@@ -150,7 +182,7 @@ describe("interruptReason", () => {
     test(`refuses the style ${JSON.stringify(style)}, which Welt does not render`, () => {
       const option = { value: "y", style } as unknown as OptionSpec;
       rejectsValue(
-        () => interruptReason("m", [option]),
+        () => interruptReason({ message: "m", options: [option] }),
         /must be "primary" or "danger"/,
       );
     });
@@ -164,15 +196,30 @@ describe("interruptReason", () => {
   // `unknown`, since a wrong value written against the typed signature
   // would not survive `tsc` either.
 
+  test("refuses a reason that is not an object", () => {
+    rejectsType(
+      () => interruptReason("Deploy?" as unknown as ReasonSpec),
+      /the reason must be an object, not a string/,
+    );
+  });
+
+  test("refuses a reason key the wire contract does not name", () => {
+    const spec = { message: "m", buttons: [] } as unknown as ReasonSpec;
+    rejectsValue(
+      () => interruptReason(spec),
+      /the reason carries unknown key\(s\): buttons/,
+    );
+  });
+
   test("refuses a key the wire contract does not name", () => {
     const option = { value: "y", labl: "Yes" } as unknown as OptionSpec;
     rejectsValue(
-      () => interruptReason("m", [option]),
+      () => interruptReason({ message: "m", options: [option] }),
       /an option carries unknown key\(s\): labl \(known: value, label, style\)/,
     );
     const input = { placeholder: "Type here" } as unknown as InputSpec;
     rejectsValue(
-      () => interruptReason("m", undefined, input),
+      () => interruptReason({ message: "m", input }),
       /input carries unknown key\(s\): placeholder \(known: label, multiline\)/,
     );
   });
@@ -187,7 +234,11 @@ describe("interruptReason", () => {
   for (const [message, named] of badMessages) {
     test(`refuses a message that is ${named}`, () => {
       rejectsType(
-        () => interruptReason(message as string, [{ value: "y" }]),
+        () =>
+          interruptReason({
+            message: message as string,
+            options: [{ value: "y" }],
+          }),
         new RegExp(`message must be a string, not ${named}`),
       );
     });
@@ -197,7 +248,8 @@ describe("interruptReason", () => {
   for (const options of badOptionLists) {
     test(`refuses options that are ${JSON.stringify(options)}`, () => {
       rejectsType(
-        () => interruptReason("m", options as OptionSpec[]),
+        () =>
+          interruptReason({ message: "m", options: options as OptionSpec[] }),
         /options must be an array/,
       );
     });
@@ -207,7 +259,8 @@ describe("interruptReason", () => {
   for (const option of badOptions) {
     test(`refuses the option ${JSON.stringify(option)}`, () => {
       rejectsType(
-        () => interruptReason("m", [option] as OptionSpec[]),
+        () =>
+          interruptReason({ message: "m", options: [option] as OptionSpec[] }),
         /an option must be an object/,
       );
     });
@@ -224,7 +277,11 @@ describe("interruptReason", () => {
   ];
   for (const [option, reason] of badOptionValues) {
     test(`refuses the option ${JSON.stringify(option)}`, () => {
-      rejectsType(() => interruptReason("m", [option] as OptionSpec[]), reason);
+      rejectsType(
+        () =>
+          interruptReason({ message: "m", options: [option] as OptionSpec[] }),
+        reason,
+      );
     });
   }
 
@@ -232,7 +289,7 @@ describe("interruptReason", () => {
   for (const input of badInputs) {
     test(`refuses the input ${JSON.stringify(input)}`, () => {
       rejectsType(
-        () => interruptReason("m", undefined, input as InputSpec),
+        () => interruptReason({ message: "m", input: input as InputSpec }),
         /input must be an object/,
       );
     });
@@ -247,9 +304,81 @@ describe("interruptReason", () => {
   for (const [input, reason] of badInputValues) {
     test(`refuses the input ${JSON.stringify(input)}`, () => {
       rejectsType(
-        () => interruptReason("m", undefined, input as InputSpec),
+        () => interruptReason({ message: "m", input: input as InputSpec }),
         reason,
       );
     });
   }
+});
+
+describe("interruptReason decisions", () => {
+  test("leaves the approve and reject wording to Welt", () => {
+    assert.deepEqual(
+      interruptReason({ message: "Deploy?", approve: {}, reject: {} }),
+      { message: "Deploy?", approve: {}, reject: {} },
+    );
+  });
+
+  test("carries a label and a style", () => {
+    assert.deepEqual(
+      interruptReason({
+        message: "Deploy?",
+        approve: { label: "Deploy" },
+        reject: { label: "Cancel", style: "primary" },
+      }),
+      {
+        message: "Deploy?",
+        approve: { label: "Deploy" },
+        reject: { label: "Cancel", style: "primary" },
+      },
+    );
+  });
+
+  test("combines with options and a field", () => {
+    assert.deepEqual(
+      interruptReason({
+        message: "Deploy?",
+        approve: {},
+        options: [{ value: "later", label: "Ask me later" }],
+        input: { label: "Or say why" },
+      }),
+      {
+        message: "Deploy?",
+        approve: {},
+        options: [{ value: "later", label: "Ask me later" }],
+        input: { label: "Or say why" },
+      },
+    );
+  });
+
+  test("refuses an empty label", () => {
+    rejectsValue(
+      () => interruptReason({ message: "m", approve: { label: "" } }),
+      /approve's label must not be empty/,
+    );
+  });
+
+  test("refuses a style Welt does not render", () => {
+    const reject = { style: "warning" } as unknown as DecisionSpec;
+    rejectsValue(
+      () => interruptReason({ message: "m", reject }),
+      /reject's style must be "primary" or "danger"/,
+    );
+  });
+
+  test("refuses a key the wire contract does not name", () => {
+    const approve = { value: true } as unknown as DecisionSpec;
+    rejectsValue(
+      () => interruptReason({ message: "m", approve }),
+      /approve carries unknown key\(s\): value \(known: label, style\)/,
+    );
+  });
+
+  test("refuses a decision that is not an object", () => {
+    const approve = "yes" as unknown as DecisionSpec;
+    rejectsType(
+      () => interruptReason({ message: "m", approve }),
+      /approve must be an object, not a string/,
+    );
+  });
 });
