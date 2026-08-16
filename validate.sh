@@ -10,6 +10,7 @@ mise install
 aube install --frozen-lockfile
 aube licenses
 aube audit --fix update --ignore-unfixable
+aube run prune
 aube run check:write
 aube run build
 aube run typecheck
