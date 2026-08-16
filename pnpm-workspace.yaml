@@ -5,7 +5,4 @@ packages:
 # read this file: Renovate updates the lockfile with upstream pnpm, which
 # ignores npm-style top-level "overrides", while local/CI installs use aube.
 overrides:
-  '@hono/node-server': '>=2.0.10'
   'fast-uri': '>=4.1.2'
-  'hono': '>=4.12.34'
-  'js-yaml': '>=3.15.1'

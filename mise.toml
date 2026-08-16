@@ -2,11 +2,16 @@ min_version = "2026.7.5"
 
 [settings]
 lockfile = true
+npm.package_manager = "aube"
 
 [tools]
 biome = "2.5.8"
 node = "24.19.0"
 "aqua:jdx/aube" = "1.40.0"
+
+[tools."npm:pnpm-override-prune"]
+version = "0.0.8"
+minimum_release_age = "0d"
 
 [task_config]
 includes = [

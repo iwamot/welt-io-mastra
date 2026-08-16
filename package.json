@@ -41,6 +41,7 @@
     "build": "tsc -p tsconfig.build.json",
     "check": "biome check",
     "check:write": "biome check --write",
+    "prune": "pnpm-override-prune --fix",
     "typecheck": "tsc --noEmit",
     "test": "mkdir -p coverage && node --test --experimental-test-coverage --test-coverage-include='src/*.ts' --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info 'tests/*.test.ts'"
   },
