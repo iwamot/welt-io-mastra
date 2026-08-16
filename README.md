@@ -77,7 +77,7 @@ Reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStre
 A run that stops for human input ends its stream with one `interrupt` event per suspended tool call; agents that do not suspend see no change. Two suspension flavors map:
 
 - An explicit `suspend(...)` in a tool passes its suspend payload through as the interrupt reason unmodified — build it with `interruptReason` below to control the widgets. Declare `resumeSchema: z.string()` on the tool: the human's answer comes back as the resume data.
-- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason with **Approve** / **Deny** buttons whose `"Approve"` / `"Deny"` answer the host app maps to `approveToolCall` / `declineToolCall`.
+- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason asking for Welt's own approve and reject buttons, whose `true` / `false` answer the host app maps to `approveToolCall` / `declineToolCall`.
 
 A tool hands files to the model for either of two reasons — to have it read them, or to give them to the human — and only the agent knows which is which, so name the tools whose files belong in the thread:
 
@@ -106,24 +106,22 @@ Uploaded names come from the `filename`, and it is yours to pick — nothing els
 
 Each event carries only what Welt reads — a `current_tool_use` is the name and id behind the indicator, a `tool_result` the id and status — so tool arguments and tool output stay off the wire. An event with nothing to render is not sent at all: a text chunk the model left empty, a file that points at its bytes by URL rather than carrying them, and a file with no bytes, which Slack refuses and fails the whole reply with. The empty one leaves a [process warning](https://nodejs.org/api/process.html#event-warning) behind, naming what returned it.
 
-#### `interruptReason(message, options, input)`
+#### `interruptReason(spec)`
 
-Builds the structured reason Welt renders as a message with the specified widgets — choice buttons (`options`), a free-text field (`input`), or both. An option's `value` is any JSON value, and the pressed button answers with it as it was declared; with neither widget the message renders as itself and Welt's default **Approve** / **Deny** buttons answer it. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt), typed as `OptionSpec` and `InputSpec`, and omitted fields keep Welt's defaults:
+Builds the structured reason Welt renders as a message with the specified widgets — the approve and reject buttons Welt words and values itself (`approve`, `reject`), choice buttons of your own (`options`), a free-text field (`input`), or any combination. `approve` and `reject` answer with `true` and `false`, so a question whose decision is approval asks for them by name instead of inventing values; `{}` takes Welt's wording, and a `label` or `style` overrides it. An option's `value` is any JSON value, and the pressed button answers with it as it was declared. With no widget at all the message renders as itself and Welt's default buttons answer it. The specs are [the wire's own shapes](https://github.com/iwamot/welt/blob/main/docs/wire.md#interrupt), typed as `ReasonSpec` over `DecisionSpec`, `OptionSpec`, and `InputSpec`, and omitted fields keep Welt's defaults:
 
 ```ts
 await context.agent.suspend(
-  interruptReason(
-    "Deploy to prod?",
-    [
-      { value: "Deploy", style: "primary" },
-      { value: "Cancel" },
-    ],
-    { label: "Or type your answer" },
-  ),
+  interruptReason({
+    message: "Deploy to prod?",
+    approve: { label: "Deploy" },
+    reject: { label: "Cancel" },
+    input: { label: "Or type your answer" },
+  }),
 );
 ```
 
-Building the reason through this helper is what makes a typo an error. A tool that declares no `suspendSchema` takes its suspend payload as `unknown`, so an object literal handed to `suspend` directly is checked by nothing, and Welt's reaction to a reason it cannot match is its default **Approve** / **Deny** buttons — no error, no log, just widgets you did not ask for. The typed parameters catch a misspelled key before the run; the checks inside catch it in the runs the types miss, since TypeScript's excess-property check fires on an object literal written at the call site and not on one that reached it through a variable. A wrong type throws a `TypeError`, an unknown key or an empty required string an `Error`. What they check is the shape, not the size: how many buttons one Slack block holds, and how long a button value may be, are Welt's to enforce.
+Building the reason through this helper is what makes a typo an error. A tool that declares no `suspendSchema` takes its suspend payload as `unknown`, so an object literal handed to `suspend` directly is checked by nothing, and Welt's reaction to a reason it cannot match is its default buttons — no error, no log, just widgets you did not ask for. The typed parameters catch a misspelled key before the run; the checks inside catch it in the runs the types miss, since TypeScript's excess-property check fires on an object literal written at the call site and not on one that reached it through a variable. A wrong type throws a `TypeError`, an unknown key or an empty required string an `Error`. What they check is the shape, not the size: how many buttons one Slack block holds, and how long a button value may be, are Welt's to enforce.
 
 ## Working with interrupts
 

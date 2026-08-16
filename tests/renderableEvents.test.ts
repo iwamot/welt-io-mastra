@@ -409,7 +409,7 @@ describe("renderableEvents", () => {
     assert.equal(interruptOf(events[0]).reason, reason);
   });
 
-  test("synthesizes an Approve/Deny reason for a tool-call approval", async () => {
+  test("synthesizes a reason asking for Welt's decisions", async () => {
     const chunks = [
       chunk("tool-call-approval", {
         toolCallId: "t1",
@@ -426,10 +426,9 @@ describe("renderableEvents", () => {
       reason.message,
       'May I run `deploy`?\n```\n{\n  "env": "prod"\n}\n```',
     );
-    assert.deepEqual(reason.options, [
-      { value: "Approve", style: "primary" },
-      { value: "Deny" },
-    ]);
+    assert.deepEqual(reason.approve, {});
+    assert.deepEqual(reason.reject, {});
+    assert.equal(reason.options, undefined);
     assert.equal(reason.input, undefined);
   });
 
@@ -486,8 +485,8 @@ describe("renderableEvents", () => {
     const events = await rendered([approval("t1"), approval("t2")]);
     const first = reasonOf(events[0]);
     const second = reasonOf(events[1]);
-    assert.notEqual(first.options, second.options);
-    assert.notEqual(first.options?.[0], second.options?.[0]);
+    assert.notEqual(first, second);
+    assert.notEqual(first.approve, second.approve);
   });
 
   test("maps error chunks to error events", async () => {

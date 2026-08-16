@@ -101,7 +101,7 @@ const sampleDangerousAction = createTool({
   inputSchema: z.object({
     action: z.string().describe("The action to pretend to run."),
   }),
-  resumeSchema: z.string(),
+  resumeSchema: z.union([z.boolean(), z.string()]),
   // A sample of the approval round trip: the suspend below pauses the run
   // until someone answers in the Slack thread — with the buttons, or by
   // typing an answer into the text field. Nothing is actually
@@ -110,18 +110,19 @@ const sampleDangerousAction = createTool({
     const answer = context?.agent?.resumeData;
     if (answer === undefined) {
       await context?.agent?.suspend(
-        interruptReason(
-          `May I run this dangerous action? — ${input.action}`,
-          [{ value: "Approve", style: "primary" }, { value: "Cancel" }],
-          { label: "Or type your answer" },
-        ),
+        interruptReason({
+          message: `May I run this dangerous action? — ${input.action}`,
+          approve: {},
+          reject: { label: "Cancel" },
+          input: { label: "Or type your answer" },
+        }),
       );
       return undefined;
     }
-    if (answer === "Approve") {
+    if (answer === true) {
       return `Ran: ${input.action}. (This example doesn't actually run anything.)`;
     }
-    if (answer === "Cancel") {
+    if (answer === false) {
       return "The action was cancelled by the user.";
     }
     return `The action was not run. The user answered: ${answer}`;
@@ -158,11 +159,14 @@ const sampleDraftReport = createTool({
         `_Drafted at ${new Date().toISOString()}._\n`;
       drafts.set(toolCallId, draft);
       await context?.agent?.suspend(
-        interruptReason(
-          `May I publish this draft?\n\n\`\`\`\n${draft}\`\`\``,
-          [{ value: "Publish", style: "primary" }, { value: "Discard" }],
-          { label: "Or type your answer" },
-        ),
+        interruptReason({
+          message: `May I publish this draft?\n\n\`\`\`\n${draft}\`\`\``,
+          options: [
+            { value: "Publish", style: "primary" },
+            { value: "Discard" },
+          ],
+          input: { label: "Or type your answer" },
+        }),
       );
       return undefined;
     }
