@@ -49,7 +49,7 @@
     "@mastra/core": ">=1.0.0"
   },
   "devDependencies": {
-    "@mastra/core": "1.59.0",
+    "@mastra/core": "1.60.0",
     "@types/node": "24.13.3",
     "typescript": "7.0.2"
   }
