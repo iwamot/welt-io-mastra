@@ -24,6 +24,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./agentcore": {
+      "types": "./dist/agentcore.d.ts",
+      "default": "./dist/agentcore.js"
     }
   },
   "engines": {
