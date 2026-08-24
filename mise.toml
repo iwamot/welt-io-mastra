@@ -10,7 +10,7 @@ locked = true
 [tools]
 biome = "2.5.10"
 node = "24.19.0"
-"aqua:jdx/aube" = "1.41.0"
+"aqua:jdx/aube" = "2.0.1"
 
 [tools."npm:pnpm-override-prune"]
 version = "0.0.8"
