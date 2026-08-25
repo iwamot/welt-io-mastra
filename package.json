@@ -24,10 +24,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./agentcore": {
-      "types": "./dist/agentcore.d.ts",
-      "default": "./dist/agentcore.js"
     }
   },
   "engines": {
@@ -42,7 +38,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "check": "biome check",
     "check:write": "biome check --write",
     "prune": "pnpm-override-prune --fix",

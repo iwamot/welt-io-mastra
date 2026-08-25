@@ -874,3 +874,107 @@ function isJsonValue(value: unknown): value is JsonValue {
   }
   return false;
 }
+
+/** One agent stream: what `Agent.stream()` and `Agent.resumeStream()` return. */
+export interface AgentStream {
+  runId: string;
+  fullStream: AsyncIterable<ChunkType<unknown>>;
+}
+
+/**
+ * What the handler drives: the Agent's streaming face.
+ *
+ * Importing the SDK to name the Agent would say what two methods already
+ * say. This names them instead, and an Agent satisfies it — as long as it
+ * lives on a `Mastra` instance, which is what holds an interrupted run
+ * for `resumeStream` to find. The `never[]` rests make room for the
+ * parameters Mastra's own overloads require beyond what the handler
+ * passes.
+ */
+export interface StreamingAgent {
+  stream(
+    messages: AIV5Type.ModelMessage[],
+    ...rest: never[]
+  ): Promise<AgentStream>;
+  resumeStream(
+    answer: JsonValue,
+    options: { runId: string; toolCallId: string },
+    ...rest: never[]
+  ): Promise<AgentStream>;
+}
+
+/** What `startReply` takes beside the agent and the payload. */
+export interface StartReplyOptions {
+  /**
+   * The id of the run being resumed, held by the caller since the stop
+   * that raised the questions. Required when the payload carries answers,
+   * and unused otherwise.
+   */
+  runId?: string;
+}
+
+/**
+ * Welt's payload, which carries one of the two envelopes.
+ *
+ * What Welt sends is taken as correct: it checks its own output against
+ * the wire contract before sending it, so this says what arrives rather
+ * than checking it. A payload carrying neither key is Welt's bug, and the
+ * error it raises is reported as an `error` event by the SDK.
+ */
+type WeltPayload =
+  | { messages: WireMessage[] }
+  | { interrupt_responses: Record<string, InterruptAnswer> };
+
+/**
+ * Start the streams that reply to the payload Welt sent.
+ *
+ * ```ts
+ * for await (const stream of startReply(agent, payload, { runId })) {
+ *   for await (const event of renderableEvents(stream.fullStream, { filesFrom })) {
+ *     yield { data: event };
+ *   }
+ * }
+ * ```
+ *
+ * A conversation turn is one stream, on the messages Welt sends — the
+ * Slack thread is the source of truth for conversation history, and the
+ * payload carries it whole. A resume is one stream per answer: Mastra
+ * resumes a suspended tool call by its own id, so a stop that asked two
+ * questions is answered in two calls. The generator is lazy — each
+ * resume starts only when the caller pulls the next stream — so drain
+ * each stream before pulling again, and each call picks up where the
+ * last left off.
+ *
+ * Each stream carries the `runId` that resumes it, and holding that —
+ * for as long as its buttons should stay answerable — is the agent's
+ * business. Nothing is held here. The run itself lives on the `Mastra`
+ * instance the agent belongs to, which is why an Agent streamed on its
+ * own keeps no suspended run for `resumeStream` to find.
+ *
+ * @param agent - The agent to stream, living on a `Mastra` instance.
+ * @param payload - Welt's invocation payload.
+ * @param options - `runId`: the run being resumed.
+ * @yields The streams of this reply, in order.
+ * @throws {Error} If the payload carries answers and no `runId` came with
+ *   them — there is no run to resume.
+ */
+export async function* startReply(
+  agent: StreamingAgent,
+  payload: unknown,
+  options?: StartReplyOptions,
+): AsyncGenerator<AgentStream, void, undefined> {
+  const envelope = payload as WeltPayload;
+  if ("interrupt_responses" in envelope) {
+    const runId = options?.runId;
+    if (runId === undefined) {
+      throw new Error("startReply was given answers but no runId to resume.");
+    }
+    for (const { toolCallId, answer } of decodeInterruptResponses(
+      envelope.interrupt_responses,
+    )) {
+      yield await agent.resumeStream(answer, { runId, toolCallId });
+    }
+    return;
+  }
+  yield await agent.stream(decodeMessages(envelope.messages));
+}

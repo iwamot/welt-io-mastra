@@ -4,10 +4,11 @@
  * Receives Welt's payload, feeds it to a Mastra agent, and streams back
  * the renderable subset of its stream chunks — BedrockAgentCoreApp emits
  * each one as SSE, which Welt (https://github.com/iwamot/welt) renders
- * into Slack. `weltAgent` is the whole connection: it reads which
- * envelope Welt sent (a conversation turn, or the answers that resume an
- * interrupted run), drives the agent, and keeps an interrupted run until
- * its answers arrive.
+ * into Slack. `startReply` reads which envelope Welt sent (a conversation
+ * turn, or the answers that resume an interrupted run), decodes it, and
+ * starts the streams that answer it; `renderableEvents` reduces what they
+ * carry. Keeping an interrupted run until its buttons are answered is
+ * this file's job, below.
  *
  * This example is a standalone deployable; Welt drives it only through
  * the JSON wire contract, which @welt-io/mastra adapts in both directions.
@@ -19,8 +20,7 @@ import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
 import { createTool } from "@mastra/core/tools";
 import type { ToolResultContent } from "@welt-io/mastra";
-import { interruptReason } from "@welt-io/mastra";
-import { weltAgent } from "@welt-io/mastra/agentcore";
+import { interruptReason, renderableEvents, startReply } from "@welt-io/mastra";
 import { BedrockAgentCoreApp } from "bedrock-agentcore/runtime";
 import { z } from "zod";
 
@@ -233,8 +233,69 @@ const mastra = new Mastra({
 });
 const agent = mastra.getAgent("weltExample");
 
+// The ids of the runs that stopped for approval, under the ids of the
+// tool calls they stopped on — Welt sends those back when the buttons are
+// answered. The run itself lives on the `Mastra` instance above; this map
+// only remembers which one to resume. An entry lives as long as this
+// process: AgentCore Runtime gives each session its own microVM, so a
+// resume that arrives after it was recycled finds nothing and throws,
+// which Welt renders as its resume-failure notice.
+const interrupted = new Map<string, string>();
+
+/**
+ * Take the run the answered questions belong to, and let the whole stop
+ * go from the map.
+ *
+ * A stop's questions are answered together, so every id in one payload
+ * names the same run; every entry holding that run leaves with it,
+ * including any the payload did not answer.
+ *
+ * Throws when no answered id is held — a resume that arrives after the
+ * process was recycled finds nothing.
+ */
+function resumed(answers: Record<string, unknown>): string {
+  const runId = Object.keys(answers)
+    .map((id) => interrupted.get(id))
+    .find((value) => value !== undefined);
+  if (runId === undefined) {
+    throw new Error("No interrupted run to resume in this session.");
+  }
+  for (const [id, value] of interrupted) {
+    if (value === runId) {
+      interrupted.delete(id);
+    }
+  }
+  return runId;
+}
+
 const app = new BedrockAgentCoreApp({
-  invocationHandler: weltAgent(agent, { filesFrom: FILES_FROM }),
+  invocationHandler: {
+    async *process(payload: unknown) {
+      const envelope = payload as {
+        interrupt_responses?: Record<string, unknown>;
+      };
+      const answers = envelope.interrupt_responses;
+      const runId = answers === undefined ? undefined : resumed(answers);
+
+      // A resume is one stream per answer; a conversation turn is one.
+      for await (const stream of startReply(agent, payload, {
+        ...(runId === undefined ? {} : { runId }),
+      })) {
+        for await (const event of renderableEvents(stream.fullStream, {
+          filesFrom: FILES_FROM,
+        })) {
+          if ("interrupt" in event) {
+            // The run stopped here, and its id is what resumes it when
+            // the buttons come back.
+            interrupted.set(event.interrupt.id, stream.runId);
+          }
+          // The AgentCore Runtime SDK puts a yielded object's `data`
+          // field on the SSE `data:` line.
+          yield { data: event };
+        }
+      }
+    },
+  },
 });
 
 app.run();
