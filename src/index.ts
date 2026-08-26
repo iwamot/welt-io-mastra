@@ -130,10 +130,9 @@ type UserPart = Exclude<
 /**
  * Decode Welt's Converse-shaped messages into AI SDK model messages.
  *
- * Strands consumes Welt's messages as-is, but Mastra does not: its agents
- * take AI SDK model messages, whose file parts carry a media type instead
- * of a Converse format token, and whose base64 data needs no decoding.
- * Each message is rebuilt — text blocks become text parts, image blocks
+ * A Mastra agent takes AI SDK model messages, whose file parts carry a
+ * media type instead of a Converse format token, and whose base64 data
+ * needs no decoding. Each message is rebuilt — text blocks become text parts, image blocks
  * image parts, and document and video blocks file parts. The result feeds
  * `Agent.stream()`.
  *
@@ -543,13 +542,26 @@ export type RenderableEvent =
   | InterruptEvent
   | ErrorEvent;
 
-const EXTENSION_BY_SUBTYPE: Readonly<Record<string, string>> = {
-  "3gpp": "3gp",
-  markdown: "md",
-  plain: "txt",
-  quicktime: "mov",
-  "x-matroska": "mkv",
+// Converse format tokens double as filename extensions, except this one.
+const EXTENSION_BY_FORMAT: Readonly<Record<string, string>> = {
+  three_gp: "3gp",
 };
+
+// The extension for every media type the wire's formats map to, built from
+// the maps above so the two cannot drift. A media subtype is not an
+// extension in general — `application/vnd.ms-excel` and `video/x-ms-wmv`
+// have none in them — which is why this is keyed on the whole media type.
+// Where two formats share one (mpeg and mpg), the last one named wins.
+const EXTENSION_BY_MEDIA_TYPE: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    [IMAGE_MEDIA_TYPES, DOCUMENT_MEDIA_TYPES, VIDEO_MEDIA_TYPES].flatMap(
+      (mapping) =>
+        Object.entries(mapping).map(([format, mediaType]) => [
+          mediaType,
+          EXTENSION_BY_FORMAT[format] ?? format,
+        ]),
+    ),
+  );
 
 const MAX_APPROVAL_ARGS_CHARS = 1500;
 
@@ -807,7 +819,7 @@ function fileName(mimeType: unknown): string {
   const stem =
     type === "image" || type === "video" || type === "audio" ? type : "file";
   const extension =
-    EXTENSION_BY_SUBTYPE[subtype] ??
+    EXTENSION_BY_MEDIA_TYPE[`${type}/${subtype}`] ??
     (/^[0-9a-z]+$/.test(subtype) ? subtype : "bin");
   return `${stem}.${extension}`;
 }

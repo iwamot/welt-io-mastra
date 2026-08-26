@@ -379,6 +379,16 @@ describe("renderableEvents", () => {
     ["application/pdf", "file.pdf"],
     ["image/svg+xml", "image.bin"],
     ["", "file.bin"],
+    // A media subtype is not an extension in general, so the media types
+    // the wire carries are named from the whole thing.
+    ["application/msword", "file.doc"],
+    ["application/vnd.ms-excel", "file.xls"],
+    [
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "file.docx",
+    ],
+    ["video/x-ms-wmv", "video.wmv"],
+    ["video/x-matroska", "video.mkv"],
   ];
   for (const [mimeType, name] of nameByMimeType) {
     test(`synthesizes the name ${name} from the media type ${mimeType}`, async () => {
