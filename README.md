@@ -16,14 +16,14 @@ npm install @welt-io/mastra
 
 ## Usage
 
-`weltAgent` builds the whole AgentCore Runtime invocation handler for an agent Welt drives, so a deployable is your agent plus one mount line:
+`startReply` and `renderableEvents` are the wiring between Welt's payload and a Mastra agent, so a deployable is your agent plus a short handler:
 
 ```ts
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { Agent } from "@mastra/core/agent";
 import { Mastra } from "@mastra/core/mastra";
-import { weltAgent } from "@welt-io/mastra/agentcore";
+import { renderableEvents, startReply } from "@welt-io/mastra";
 import { BedrockAgentCoreApp } from "bedrock-agentcore/runtime";
 
 const bedrock = createAmazonBedrock({
@@ -41,12 +41,24 @@ const mastra = new Mastra({
   },
 });
 
+const agent = mastra.getAgent("assistant");
+
 const app = new BedrockAgentCoreApp({
-  invocationHandler: weltAgent(mastra.getAgent("assistant")),
+  invocationHandler: {
+    async *process(payload: unknown) {
+      for await (const stream of startReply(agent, payload)) {
+        for await (const event of renderableEvents(stream.fullStream)) {
+          yield { data: event };
+        }
+      }
+    },
+  },
 });
 
 app.run();
 ```
+
+An agent with approval tools keeps the run ids it needs to resume; [`examples/agent`](examples/agent) shows that — a map in the entrypoint, keyed on interrupt id, and a lookup beside it that hands back the run the answers name and drops the whole stop with it.
 
 See [`examples/agent`](examples/agent) for the full version — the smallest complete agent built on this package (text streaming, tool use, file output, file input, and human-approval tools). The sections below cover the handler and the adapters it wires in.
 
@@ -66,19 +78,17 @@ Something misbehaving inside that range is worth an [issue](https://github.com/i
 
 ## API
 
-The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, two the outbound stream. `weltAgent` wires the three of them the handler needs (`interruptReason` serves the tools themselves); reach for the pieces directly when your handler needs a shape of its own.
+The wire between Welt and the agent is JSON, specified by [Welt's wire contract](https://github.com/iwamot/welt/blob/main/docs/wire.md) — plain Mastra values do not fit it in either direction. Two functions adapt the inbound payload, two the outbound stream. `startReply` wires the inbound pair into the streams of one reply (`interruptReason` serves the tools themselves); reach for the pieces directly when your handler needs a shape of its own — messages to edit before the run, an agent to stream some other way.
 
-### Handler
+### Reply
 
-#### `weltAgent(agent, { filesFrom })`
+#### `startReply(agent, payload, { runId })`
 
-Builds the invocation handler `BedrockAgentCoreApp` takes. It reads which envelope Welt sent — Converse-shaped `messages` for a conversation turn, `interrupt_responses` for the answers that resume an interrupted run — drives the agent, and yields the events Welt renders, each wrapped as the SSE frame the AgentCore Runtime SDK emits.
+Starts the streams that reply to Welt's payload. It reads which envelope Welt sent — Converse-shaped `messages` for a conversation turn, `interrupt_responses` for the answers that resume an interrupted run — decodes it, and streams the agent on the result. Each stream's `fullStream` is what `renderableEvents` below takes.
 
-The agent must live on a `Mastra` instance, because that instance is what holds a suspended run — an Agent streamed on its own keeps no suspended run for `resumeStream` to find. Every turn streams fresh from the messages Welt sends: the Slack thread is the source of truth for conversation history, and the payload carries it whole. An interrupted run's id waits inside the handler for its answers — one slot, resume-only, living and dying with the session's microVM (recycled on idle timeout, 8 hours at most); resuming after that throws, which Welt renders as its resume-failure notice. `filesFrom` passes through to `renderableEvents` below.
+A conversation turn is one stream. A resume is one per answer, since Mastra resumes a suspended tool call by its own id: a stop that asked two questions is answered in two calls. The generator is lazy — each resume starts only when you pull the next stream — so drain each stream before pulling again, and each call picks up where the last left off. The agent must live on a `Mastra` instance, because that instance is what holds a suspended run — an Agent streamed on its own keeps no suspended run for `resumeStream` to find.
 
-#### `sendFile(name, data)`
-
-Queues one file for the Slack thread from inside a tool, riding the wire beside the reply being streamed. The model never sees it — a tool whose file matters to the conversation says what it holds in its result, or returns it as a media part of its tool-result content and is named in `filesFrom`, which puts it in front of the model and on the thread both. Every turn starts with the queue empty, so a file a failed turn left behind never rides a later reply, and an empty name or empty bytes is refused where the tool is still on the stack — Slack refuses a zero-byte upload, and the whole reply fails with it.
+Each stream carries the `runId` that resumes it. Where to keep that — and for how long an unanswered approval stays answerable — is the agent's to decide; answers with no `runId` beside them throw. Nothing is held here.
 
 ### Inbound
 
@@ -96,11 +106,11 @@ Each file-carrying part gets the media type an AI SDK part takes in place of the
 
 #### `decodeInterruptResponses(responses)`
 
-Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose and the widget it came from — into `{toolCallId, answer}` pairs, the answer travelling on as the value it was given, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which `weltAgent` stashes when an interrupt event goes by — a handler of your own does the same.
+Turns Welt's resume payload — a mapping of interrupt id to the answer a human chose and the widget it came from — into `{toolCallId, answer}` pairs, the answer travelling on as the value it was given, one per `Agent.resumeStream(answer, { runId, toolCallId })` call. The interrupt id is the suspended tool call's id, as emitted by `renderableEvents`; the run id is the interrupted stream's `runId`, which the handler stashes when an interrupt event goes by.
 
 #### What arrives is taken as correct
 
-Welt builds the payload and checks its own output against the wire contract before releasing it, so these two functions do no field validation of their own. Their parameter types — `WireMessage[]` and `Record<string, string>` — say what arrives, and the payload is asserted to be Welt's where it enters — `weltAgent` does this at its door, and a handler of your own does the same. A payload that departs from the contract is a bug on the sending side rather than an input to guard against, and it surfaces as an ordinary error from whatever touches it first.
+Welt builds the payload and checks its own output against the wire contract before releasing it, so these two functions do no field validation of their own. Their parameter types — `WireMessage[]` and `Readonly<Record<string, InterruptAnswer>>` — say what arrives, and the payload is asserted to be Welt's where it enters — `startReply` does this at its door. A payload that departs from the contract is a bug on the sending side rather than an input to guard against, and it surfaces as an ordinary error from whatever touches it first.
 
 The one thing `decodeMessages` refuses outright is a content block of a kind Welt never sends. A `messages` turn carries only `text`, `image`, `document`, and `video` blocks; a `toolUse` or `toolResult` block is not a malformed one of those but a forged conversation turn, and rebuilt into history it would let a caller that is not Welt put words the model treats as its own past tool calls and their results into the run. It throws an `Error`. This is a trust-boundary check, not the field validation the contract otherwise saves you from.
 

@@ -26,7 +26,7 @@ MODEL_ID=global.anthropic.claude-sonnet-4-6 AWS_REGION=us-west-2 node main.ts
 
 The process needs AWS credentials the standard SDK way — environment variables, `AWS_PROFILE`, an SSO session — because the model still runs on Amazon Bedrock. The region does need to be `AWS_REGION`: unlike credentials, the AI SDK's Bedrock provider reads it from nowhere else — not from your AWS profile — so pass whichever region your model access lives in. `MODEL_ID` takes any Converse model with access enabled in the Amazon Bedrock console; unset, the agent falls back to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile, as above.
 
-One difference from the cloud: AgentCore Runtime gives every session its own microVM, while the local server is a single process for all sessions — the agent stashes an interrupted run in one slot, so keep interrupt experiments to one thread at a time.
+One difference from the cloud: AgentCore Runtime gives every session its own microVM, while the local server is a single process for all sessions — the interrupted run ids this example keeps all share that one process, outlive the session that raised them, and accumulate while unanswered until the process exits.
 
 ## Deploy
 
