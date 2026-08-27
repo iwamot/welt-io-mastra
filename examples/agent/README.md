@@ -21,10 +21,14 @@ Fetch the agent and run it with Node.js 24, which runs TypeScript directly:
 curl -O https://raw.githubusercontent.com/iwamot/welt-io-mastra/main/examples/agent/src/main.ts
 echo '{"type":"module"}' > package.json
 npm install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers zod bedrock-agentcore
-MODEL_ID=global.anthropic.claude-sonnet-4-6 AWS_REGION=us-west-2 node main.ts
+BEDROCK_REGION=us-west-2 node main.ts
 ```
 
-The process needs AWS credentials the standard SDK way — environment variables, `AWS_PROFILE`, an SSO session — because the model still runs on Amazon Bedrock. The region does need to be `AWS_REGION`: unlike credentials, the AI SDK's Bedrock provider reads it from nowhere else — not from your AWS profile — so pass whichever region your model access lives in. `MODEL_ID` takes any Converse model with access enabled in the Amazon Bedrock console; unset, the agent falls back to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile, as above.
+The process needs AWS credentials the standard SDK way — environment variables, `AWS_PROFILE`, an SSO session — because the model still runs on Amazon Bedrock.
+
+`MODEL_ID` takes any Converse model with access enabled in the Amazon Bedrock console; unset, the agent uses `global.anthropic.claude-sonnet-4-6`, Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile. The model is built in one place near the top of `main.ts`: the AI SDK's Bedrock provider, which speaks Converse to bedrock-runtime.
+
+`BEDROCK_REGION` sends the model calls to a region of their own, and this example is the one that needs it locally: unlike credentials, the AI SDK's Bedrock provider resolves a region from `AWS_REGION` alone — not `AWS_DEFAULT_REGION`, not your AWS profile — and fails the call when neither that nor `BEDROCK_REGION` names one. Pass whichever region your model access lives in. Deployed, this is already handled: AgentCore Runtime names its own region in `AWS_REGION`.
 
 One difference from the cloud: AgentCore Runtime gives every session its own microVM, while the local server is a single process for all sessions — the interrupted run ids this example keeps all share that one process, outlive the session that raised them, and accumulate while unanswered until the process exits.
 
@@ -43,7 +47,7 @@ npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon
 agentcore deploy
 ```
 
-The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
+The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model — and `BEDROCK_REGION` at another region, to leave the model access where it already is. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
 
 The CLI has no teardown command — removing the deployment means deleting the CloudFormation stack it created, `AgentCore-WeltExample-default`.
 

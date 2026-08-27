@@ -24,11 +24,22 @@ import { interruptReason, renderableEvents, startReply } from "@welt-io/mastra";
 import { BedrockAgentCoreApp } from "bedrock-agentcore/runtime";
 import { z } from "zod";
 
-// The AWS SDK provider chain picks up the AgentCore Runtime workload
-// credentials; the AI SDK's default env-var resolution would not.
+// The model is the one place that decides which Bedrock endpoint, API, and
+// region the agent talks to; nothing else in this file depends on that
+// choice. The AI SDK's Bedrock provider speaks Converse to bedrock-runtime,
+// so MODEL_ID takes any Converse model there. The AWS SDK provider chain
+// picks up the AgentCore Runtime workload credentials; the AI SDK's default
+// env-var resolution would not. The region has no such chain to fall back
+// on: BEDROCK_REGION names it, and unset the provider reads AWS_REGION and
+// nothing else — not AWS_DEFAULT_REGION, not the profile. `||`, not `??`: an
+// empty value means unset, like Welt's own variables.
 const bedrock = createAmazonBedrock({
   credentialProvider: fromNodeProviderChain(),
+  ...(process.env.BEDROCK_REGION ? { region: process.env.BEDROCK_REGION } : {}),
 });
+const model = bedrock(
+  process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6",
+);
 
 const currentTime = createTool({
   id: "current_time",
@@ -217,10 +228,7 @@ const mastra = new Mastra({
         "You are a helpful assistant replying in a Slack thread. Keep replies" +
         " concise. Files reach the thread under the names their tools state;" +
         " never refer to a file by the name it carries as a document.",
-      // `||`, not `??`: an empty MODEL_ID means unset, like Welt's own variables.
-      model: bedrock(
-        process.env.MODEL_ID || "global.anthropic.claude-sonnet-4-6",
-      ),
+      model,
       // The record keys are the tool names the model and the thread see.
       tools: {
         current_time: currentTime,
