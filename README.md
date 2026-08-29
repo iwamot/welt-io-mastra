@@ -131,7 +131,7 @@ Reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStre
 A run that stops for human input ends its stream with one `interrupt` event per suspended tool call; agents that do not suspend see no change. Two suspension flavors map:
 
 - An explicit `suspend(...)` in a tool passes its suspend payload through as the interrupt reason unmodified — build it with `interruptReason` below to control the widgets. The answer comes back as the resume data, so the tool's `resumeSchema` has to admit everything the widgets it asked for can answer with: `approve` and `reject` answer with a boolean, an option with its own `value`, a text field with a string. The [example agent](examples/agent)'s approval tool offers buttons and a text field, so it declares `z.union([z.boolean(), z.string()])`.
-- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs) gets a synthesized reason asking for Welt's own approve and reject buttons, whose `true` / `false` answer the host app maps to `approveToolCall` / `declineToolCall`.
+- A tool call awaiting Mastra's [`requireToolApproval`](https://mastra.ai/docs/agents/human-in-the-loop) gets a synthesized reason asking for Welt's own approve and reject buttons, whose `true` / `false` answer the host app maps to `approveToolCall` / `declineToolCall`.
 
 A tool hands files to the model for either of two reasons — to have it read them, or to give them to the human — and only the agent knows which is which, so name the tools whose files belong in the thread:
 
