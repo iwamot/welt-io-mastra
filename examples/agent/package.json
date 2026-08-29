@@ -14,7 +14,7 @@
     "@mastra/core": "1.63.1",
     "@welt-io/mastra": "workspace:*",
     "bedrock-agentcore": "0.4.3",
-    "zod": "4.4.3"
+    "zod": "4.5.1"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
