@@ -46,7 +46,7 @@
     "test": "mkdir -p coverage && node --test --experimental-test-coverage --test-coverage-include='src/*.ts' --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info 'tests/*.test.ts'"
   },
   "peerDependencies": {
-    "@mastra/core": ">=1.0.0"
+    "@mastra/core": ">=1.58.0"
   },
   "devDependencies": {
     "@mastra/core": "1.63.2",

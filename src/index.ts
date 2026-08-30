@@ -616,11 +616,10 @@ export interface RenderableEventsOptions {
  * (`interrupt` — a suspended tool call's id and suspend payload, the
  * latter passed through unmodified since interpreting a reason is the
  * renderer's job; a tool call awaiting `requireToolApproval` gets a
- * synthesized reason asking for Welt's own approve and reject buttons,
- * whose `true` / `false` answer maps to `approveToolCall` /
- * `declineToolCall`), and
- * failures (`error`, from
- * error and tripwire chunks). Everything else is dropped.
+ * synthesized reason whose two buttons carry Mastra's own approval input,
+ * so the answer resumes the run as it arrives), and failures (`error`,
+ * from error and tripwire chunks). A rejected call closes its indicator
+ * as an error, since it never ran. Everything else is dropped.
  *
  * An event with nothing to render is dropped too: a text chunk the model
  * left empty, a file that points at its bytes rather than carrying them,
@@ -672,6 +671,14 @@ export async function* renderableEvents<OUTPUT = undefined>(
         break;
       }
       case "tool-error": {
+        yield {
+          tool_result: { toolUseId: chunk.payload.toolCallId, status: "error" },
+        };
+        break;
+      }
+      case "tool-output-denied": {
+        // The call a human rejected never ran, and the indicator it opened
+        // closes on this chunk alone: no result or error follows it.
         yield {
           tool_result: { toolUseId: chunk.payload.toolCallId, status: "error" },
         };
@@ -834,8 +841,17 @@ function approvalReason(
   return interruptReason({
     message:
       rendered === null ? heading : `${heading}\n\`\`\`\n${rendered}\n\`\`\``,
-    approve: {},
-    reject: {},
+    // The buttons carry the resume input itself. Mastra reads a decision
+    // out of a resume only when it arrives as `{approved: boolean}`, and
+    // an option's value comes back from Welt the way it was declared, so
+    // the pressed button is what resumes the run and nothing has to be
+    // recognized on the way back. Welt's own approve and reject buttons
+    // answer with `true` and `false`, which Mastra does not read as a
+    // decision: it would put the same question to the thread again.
+    options: [
+      { value: { approved: true }, label: "Approve", style: "primary" },
+      { value: { approved: false }, label: "Reject", style: "danger" },
+    ],
   });
 }
 
