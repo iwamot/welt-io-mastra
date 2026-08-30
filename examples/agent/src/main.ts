@@ -86,6 +86,11 @@ const createSampleFile = createTool({
   id: "create_sample_file",
   description: "Create a small sample CSV file.",
   inputSchema: z.object({}),
+  // A sample of the other pause: Mastra holds the call before the tool
+  // runs, and the adapter turns that into Welt's Approve / Reject
+  // buttons. The pause below in `sample_dangerous_action` is the tool's
+  // own, and reaches the thread the same way.
+  requireApproval: true,
   execute: async () =>
     fileContent(
       "Created sample.csv.",

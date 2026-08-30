@@ -149,6 +149,22 @@ describe("renderableEvents", () => {
     ]);
   });
 
+  test("closes a rejected call as an error", async () => {
+    const chunks = [
+      chunk("tool-call", { toolCallId: "t1", toolName: "my_tool", args: {} }),
+      chunk("tool-output-denied", {
+        toolCallId: "t1",
+        toolName: "my_tool",
+        args: { env: "prod" },
+        approval: { id: "t1", approved: false },
+      }),
+    ];
+    assert.deepEqual(await rendered(chunks), [
+      { current_tool_use: { toolUseId: "t1", name: "my_tool" } },
+      { tool_result: { toolUseId: "t1", status: "error" } },
+    ]);
+  });
+
   test("yields the files of a tool named in filesFrom", async () => {
     const chunks = [
       chunk("tool-result", {
@@ -419,7 +435,7 @@ describe("renderableEvents", () => {
     assert.equal(interruptOf(events[0]).reason, reason);
   });
 
-  test("synthesizes a reason asking for Welt's decisions", async () => {
+  test("synthesizes a reason whose buttons carry Mastra's decision", async () => {
     const chunks = [
       chunk("tool-call-approval", {
         toolCallId: "t1",
@@ -436,9 +452,12 @@ describe("renderableEvents", () => {
       reason.message,
       'May I run `deploy`?\n```\n{\n  "env": "prod"\n}\n```',
     );
-    assert.deepEqual(reason.approve, {});
-    assert.deepEqual(reason.reject, {});
-    assert.equal(reason.options, undefined);
+    assert.deepEqual(reason.options, [
+      { value: { approved: true }, label: "Approve", style: "primary" },
+      { value: { approved: false }, label: "Reject", style: "danger" },
+    ]);
+    assert.equal(reason.approve, undefined);
+    assert.equal(reason.reject, undefined);
     assert.equal(reason.input, undefined);
   });
 
@@ -496,7 +515,7 @@ describe("renderableEvents", () => {
     const first = reasonOf(events[0]);
     const second = reasonOf(events[1]);
     assert.notEqual(first, second);
-    assert.notEqual(first.approve, second.approve);
+    assert.notEqual(first.options, second.options);
   });
 
   test("maps error chunks to error events", async () => {
