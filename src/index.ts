@@ -563,8 +563,6 @@ const EXTENSION_BY_MEDIA_TYPE: Readonly<Record<string, string>> =
     ),
   );
 
-const MAX_APPROVAL_ARGS_CHARS = 1500;
-
 /** A text part of the content a tool returns. */
 export interface ToolResultTextPart {
   type: "text";
@@ -859,16 +857,12 @@ function renderedArgs(args: Record<string, unknown>): string | null {
   if (Object.keys(args).length === 0) {
     return null;
   }
-  let rendered: string;
   try {
-    rendered = JSON.stringify(args, null, 2);
+    return JSON.stringify(args, null, 2);
   } catch {
     // Not JSON-serializable (a BigInt, a cycle); the heading alone will do.
     return null;
   }
-  return rendered.length > MAX_APPROVAL_ARGS_CHARS
-    ? `${rendered.slice(0, MAX_APPROVAL_ARGS_CHARS)}…`
-    : rendered;
 }
 
 function errorText(error: unknown): string {

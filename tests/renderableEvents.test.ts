@@ -489,18 +489,21 @@ describe("renderableEvents", () => {
     );
   });
 
-  test("truncates an oversized args block", async () => {
+  test("keeps an oversized args block whole", async () => {
+    const args = { text: "a".repeat(3000) };
     const chunks = [
       chunk("tool-call-approval", {
         toolCallId: "t1",
         toolName: "deploy",
-        args: { text: "a".repeat(3000) },
+        args,
         resumeSchema: "{}",
       }),
     ];
     const message = reasonOf((await rendered(chunks))[0]).message;
-    assert.ok(message.endsWith("…\n```"));
-    assert.ok(message.length < 1600);
+    assert.equal(
+      message,
+      `May I run \`deploy\`?\n\`\`\`\n${JSON.stringify(args, null, 2)}\n\`\`\``,
+    );
   });
 
   test("builds a fresh approval reason per event", async () => {
