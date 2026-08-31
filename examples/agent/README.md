@@ -34,7 +34,7 @@ One difference from the cloud: AgentCore Runtime gives every session its own mic
 
 ## Deploy
 
-Deploy with the [AgentCore CLI](https://github.com/aws/agentcore-cli):
+Deploy with the [AgentCore CLI](https://github.com/aws/agentcore-cli), replacing the generated agent with this one — the CLI's only TypeScript template is the Strands one, so that is the scaffold, and the agent inside it is swapped:
 
 ```sh
 agentcore create --name WeltExample --no-agent
@@ -42,6 +42,7 @@ cd WeltExample
 agentcore add agent --name WeltExample --type create --build CodeZip --language TypeScript --framework Strands --model-provider Bedrock --memory none
 
 curl -o app/WeltExample/main.ts https://raw.githubusercontent.com/iwamot/welt-io-mastra/main/examples/agent/src/main.ts
+npm --prefix app/WeltExample uninstall @strands-agents/sdk
 npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers zod
 
 agentcore deploy
