@@ -742,6 +742,6 @@ checksum = "sha256:6cac9ffbca8f6a47091e4b5c772e0606049c3871cb67d900c0cedde630e54
 url = "https://nodejs.org/dist/v24.20.0/node-v24.20.0-win-x64.zip"
 
 [[tools."npm:pnpm-override-prune"]]
-version = "0.0.8"
+version = "0.0.9"
 backend = "npm:pnpm-override-prune"
-specifiers = ["0.0.8"]
+specifiers = ["0.0.9"]
