@@ -13,7 +13,7 @@ node = "24.20.0"
 "aqua:jdx/aube" = "2.2.0"
 
 [tools."npm:pnpm-override-prune"]
-version = "0.0.8"
+version = "0.0.9"
 minimum_release_age = "0d"
 
 [task_config]
