@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "5.0.72",
-    "@aws-sdk/credential-providers": "3.1123.0",
+    "@aws-sdk/credential-providers": "3.1124.0",
     "@mastra/core": "1.63.2",
     "@welt-io/mastra": "workspace:*",
     "bedrock-agentcore": "0.4.3",
