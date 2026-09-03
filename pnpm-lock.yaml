@@ -13,7 +13,7 @@ importers:
     devDependencies:
       '@mastra/core':
         specifier: 1.63.2
-        version: 1.63.2(zod@4.5.4)
+        version: 1.63.2(express@5.2.1)(zod@4.5.4)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -24,17 +24,17 @@ importers:
   examples/agent:
     dependencies:
       '@ai-sdk/amazon-bedrock':
-        specifier: 5.0.72
-        version: 5.0.72(zod@4.5.4)
+        specifier: 5.0.73
+        version: 5.0.73(zod@4.5.4)
       '@aws-sdk/credential-providers':
         specifier: 3.1124.0
         version: 3.1124.0
       '@mastra/core':
         specifier: 1.63.2
-        version: 1.63.2(zod@4.5.4)
+        version: 1.63.2(express@5.2.1)(zod@4.5.4)
       '@welt-io/mastra':
         specifier: workspace:*
-        version: 0.0.0
+        version: link:../..
       bedrock-agentcore:
         specifier: 0.4.3
         version: 0.4.3
@@ -81,20 +81,20 @@ packages:
       express:
         optional: true
 
-  '@ai-sdk/amazon-bedrock@5.0.72':
-    resolution: {integrity: sha512-6o9nQUvC0ikAr5fqqqC8etllSezV0nMk5zaweSXPZOJKaCRTYuQ9oxTyb04+eeRQ5wKmSfuDLRQs0nVhFGtVjw==}
+  '@ai-sdk/amazon-bedrock@5.0.73':
+    resolution: {integrity: sha512-h91UCCvVRfrAXJQ7pqTnLBQHizrfbDvKLHEUkaRwJxH/V9K5SIMKrvzyApI1iPE1pTGnSdWVqXZm/I32LK9cUg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/anthropic@4.0.48':
-    resolution: {integrity: sha512-9KRW3ySRQ8pGn1ZHWgek42OqOcOTKlRrVOOiEHA9k2BiiRn7Hzd0QNYtrYjvI+TCo9K7DaE0uLoW2yyB+L8/Bw==}
+  '@ai-sdk/anthropic@4.0.49':
+    resolution: {integrity: sha512-fzy2sLrs3vNsliIgx65fuovsa6a7OTXd6DllKUgLuVmPyqLnvoZCv9NlKgq+krzDzSxLb9d0zTaJJpsjBVLNyA==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai@4.0.56':
-    resolution: {integrity: sha512-q/GyXWeYUJFk76JIlgwp1yMEvEFPFT/ueKHTazbYI+tQ/8ZTTTdkL1y6bWN06zCIusbpt7laiKytFV+37JZsgA==}
+  '@ai-sdk/openai@4.0.57':
+    resolution: {integrity: sha512-akpj7mE4z3qmofk+fVlnASxFF6Fh8kuihk1AVsY09uf/sv4CxmiGDjMJrmSWffIx+JEAuZmGUq8uKxEXjw/7Xw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1469,10 +1469,10 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
-  '@ai-sdk/amazon-bedrock@5.0.72(zod@4.5.4)':
+  '@ai-sdk/amazon-bedrock@5.0.73(zod@4.5.4)':
     dependencies:
-      '@ai-sdk/anthropic': 4.0.48(zod@4.5.4)
-      '@ai-sdk/openai': 4.0.56(zod@4.5.4)
+      '@ai-sdk/anthropic': 4.0.49(zod@4.5.4)
+      '@ai-sdk/openai': 4.0.57(zod@4.5.4)
       '@ai-sdk/provider': 4.0.10
       '@ai-sdk/provider-utils': 5.0.36(zod@4.5.4)
       '@smithy/eventstream-codec': 4.4.16
@@ -1480,13 +1480,13 @@ snapshots:
       aws4fetch: 1.0.20
       zod: 4.5.4
 
-  '@ai-sdk/anthropic@4.0.48(zod@4.5.4)':
+  '@ai-sdk/anthropic@4.0.49(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 4.0.10
       '@ai-sdk/provider-utils': 5.0.36(zod@4.5.4)
       zod: 4.5.4
 
-  '@ai-sdk/openai@4.0.56(zod@4.5.4)':
+  '@ai-sdk/openai@4.0.57(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 4.0.10
       '@ai-sdk/provider-utils': 5.0.36(zod@4.5.4)
@@ -1805,7 +1805,7 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
-  '@mastra/core@1.63.2(zod@4.5.4)':
+  '@mastra/core@1.63.2(express@5.2.1)(zod@4.5.4)':
     dependencies:
       '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1)'
       '@a2a-js/sdk-v1': '@a2a-js/sdk@1.0.1(express@5.2.1)'
@@ -1845,6 +1845,7 @@ snapshots:
       - '@grpc/grpc-js'
       - ai
       - bufferutil
+      - express
       - rxjs
       - supports-color
       - utf-8-validate
