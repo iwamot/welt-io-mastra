@@ -10,4 +10,4 @@ packages:
 # read this file: Renovate updates the lockfile with upstream pnpm, which
 # ignores npm-style top-level "overrides", while local/CI installs use aube.
 overrides:
-  'fast-uri': '>=4.1.2'
+  'fast-uri': '>=4.1.4'
