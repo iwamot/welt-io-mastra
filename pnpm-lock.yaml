@@ -12,8 +12,8 @@ importers:
   .:
     devDependencies:
       '@mastra/core':
-        specifier: 1.63.2
-        version: 1.63.2(express@5.2.1)(zod@4.5.4)
+        specifier: 1.64.0
+        version: 1.64.0(express@5.2.1)(zod@4.5.4)
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -30,8 +30,8 @@ importers:
         specifier: 3.1125.0
         version: 3.1125.0
       '@mastra/core':
-        specifier: 1.63.2
-        version: 1.63.2(express@5.2.1)(zod@4.5.4)
+        specifier: 1.64.0
+        version: 1.64.0(express@5.2.1)(zod@4.5.4)
       '@welt-io/mastra':
         specifier: workspace:*
         version: link:../..
@@ -96,12 +96,6 @@ packages:
   '@ai-sdk/openai@4.0.57':
     resolution: {integrity: sha512-akpj7mE4z3qmofk+fVlnASxFF6Fh8kuihk1AVsY09uf/sv4CxmiGDjMJrmSWffIx+JEAuZmGUq8uKxEXjw/7Xw==}
     engines: {node: '>=22'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider-utils@3.0.30':
-    resolution: {integrity: sha512-NCJ9JKow5ENAgEZxzvEvF20thwDiH+hutvzmrUDbloRX0azpJHNst8+7pZIVryYhLM9wgpT5/ShTSjPTFhkxEQ==}
-    engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -280,14 +274,14 @@ packages:
     resolution: {integrity: sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w==}
     engines: {node: '>=8'}
 
-  '@mastra/core@1.63.2':
-    resolution: {integrity: sha512-BHVDF4GtQnIqRND/lPVVoTnmoNzZ7+voz+EpI4YSY0W7In6c/EOrmMnshuNQSDJ9NpxQNrwip0WGYpRYwzFirQ==}
+  '@mastra/core@1.64.0':
+    resolution: {integrity: sha512-+fuvDeORYWIb+SJrGQlXQi6r1JCxd05g3SNCDepnO910j4uqxMWf5s22Ta0sRSR5zbKRx2NUZoWPAfQt2xF4hQ==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  '@mastra/schema-compat@1.3.7':
-    resolution: {integrity: sha512-06WfY+j9rulYnDp8CM7pL7JIyrntkMolqmyyb1VJNEzlYTQCIcJcY0SwQiubZv2tztmoYGikszDiRVyXp0E9gA==}
+  '@mastra/schema-compat@1.3.8':
+    resolution: {integrity: sha512-uGGQlb/QAIgghHf/FQLfnpHbUMXWWJDFlv0FQ/p0K6TjT8OVdWC9uNPdwQmFYu8Fzut4Z+LmzNkJ5S378/41Ew==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -1492,13 +1486,6 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.36(zod@4.5.4)
       zod: 4.5.4
 
-  '@ai-sdk/provider-utils@3.0.30(zod@4.5.4)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.3
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.1.0
-      zod: 4.5.4
-
   '@ai-sdk/provider-utils@4.0.40(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
@@ -1805,11 +1792,10 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
-  '@mastra/core@1.63.2(express@5.2.1)(zod@4.5.4)':
+  '@mastra/core@1.64.0(express@5.2.1)(zod@4.5.4)':
     dependencies:
       '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1)'
       '@a2a-js/sdk-v1': '@a2a-js/sdk@1.0.1(express@5.2.1)'
-      '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.5.4)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.5.4)'
       '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.13(zod@4.5.4)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
@@ -1817,7 +1803,7 @@ snapshots:
       '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.4'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
-      '@mastra/schema-compat': 1.3.7(zod@4.5.4)
+      '@mastra/schema-compat': 1.3.8(zod@4.5.4)
       '@modelcontextprotocol/server': 2.0.0
       '@sindresorhus/slugify': 2.2.1
       '@standard-schema/spec': 1.1.0
@@ -1851,7 +1837,7 @@ snapshots:
       - utf-8-validate
       - workflow
 
-  '@mastra/schema-compat@1.3.7(zod@4.5.4)':
+  '@mastra/schema-compat@1.3.8(zod@4.5.4)':
     dependencies:
       json-schema-to-zod: 2.8.1
       zod: 4.5.4
