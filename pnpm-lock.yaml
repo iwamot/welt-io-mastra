@@ -13,7 +13,7 @@ importers:
     devDependencies:
       '@mastra/core':
         specifier: 1.76.0
-        version: 1.76.0(express@5.2.1)(zod@4.6.6)
+        version: 1.76.0(express@5.2.1)(zod@4.6.7)
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -25,13 +25,13 @@ importers:
     dependencies:
       '@ai-sdk/amazon-bedrock':
         specifier: 5.0.114
-        version: 5.0.114(zod@4.6.6)
+        version: 5.0.114(zod@4.6.7)
       '@aws-sdk/credential-providers':
         specifier: 3.1149.0
         version: 3.1149.0
       '@mastra/core':
         specifier: 1.76.0
-        version: 1.76.0(express@5.2.1)(zod@4.6.6)
+        version: 1.76.0(express@5.2.1)(zod@4.6.7)
       '@welt-io/mastra':
         specifier: workspace:*
         version: link:../..
@@ -39,8 +39,8 @@ importers:
         specifier: 0.4.5
         version: 0.4.5(@a2a-js/sdk@1.0.1(express@5.2.1))(express@5.2.1)
       zod:
-        specifier: 4.6.6
-        version: 4.6.6
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 24.19.2
@@ -1580,6 +1580,9 @@ packages:
   zod@4.6.6:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -1598,53 +1601,53 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
-  '@ai-sdk/amazon-bedrock@5.0.114(zod@4.6.6)':
+  '@ai-sdk/amazon-bedrock@5.0.114(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/anthropic': 4.0.79(zod@4.6.6)
-      '@ai-sdk/openai': 4.0.92(zod@4.6.6)
+      '@ai-sdk/anthropic': 4.0.79(zod@4.6.7)
+      '@ai-sdk/openai': 4.0.92(zod@4.6.7)
       '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.6)
+      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
       '@smithy/eventstream-codec': 4.4.16
       '@smithy/util-utf8': 4.4.16
       aws4fetch: 1.0.20
-      zod: 4.6.6
+      zod: 4.6.7
 
-  '@ai-sdk/anthropic@4.0.79(zod@4.6.6)':
+  '@ai-sdk/anthropic@4.0.79(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.6)
-      zod: 4.6.6
+      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
+      zod: 4.6.7
 
-  '@ai-sdk/openai@4.0.92(zod@4.6.6)':
+  '@ai-sdk/openai@4.0.92(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.6)
-      zod: 4.6.6
+      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
+      zod: 4.6.7
 
-  '@ai-sdk/provider-utils@4.0.40(zod@4.6.6)':
+  '@ai-sdk/provider-utils@4.0.40(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
-      zod: 4.6.6
+      zod: 4.6.7
 
-  '@ai-sdk/provider-utils@5.0.54(zod@4.6.6)':
+  '@ai-sdk/provider-utils@5.0.54(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.22
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
       undici: 7.30.0
-      zod: 4.6.6
+      zod: 4.6.7
 
-  '@ai-sdk/provider-utils@5.0.59(zod@4.6.6)':
+  '@ai-sdk/provider-utils@5.0.59(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.27
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
       undici: 7.30.0
-      zod: 4.6.6
+      zod: 4.6.7
 
   '@ai-sdk/provider@2.0.3':
     dependencies:
@@ -2061,27 +2064,27 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
-  '@mastra/core@1.76.0(express@5.2.1)(zod@4.6.6)':
+  '@mastra/core@1.76.0(express@5.2.1)(zod@4.6.7)':
     dependencies:
       '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1)'
       '@a2a-js/sdk-v1': '@a2a-js/sdk@1.0.1(express@5.2.1)'
-      '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.6.6)'
-      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.54(zod@4.6.6)'
+      '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.6.7)'
+      '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.54(zod@4.6.7)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
       '@ai-sdk/provider-v6': '@ai-sdk/provider@3.0.14'
       '@ai-sdk/provider-v7': '@ai-sdk/provider@4.0.22'
       '@isaacs/ttlcache': 2.1.5
       '@lukeed/uuid': 2.0.1
-      '@mastra/schema-compat': 1.3.13(zod@4.6.6)
+      '@mastra/schema-compat': 1.3.13(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
-      chat: 4.41.0(zod@4.6.6)
+      chat: 4.41.0(zod@4.6.7)
       croner: 10.0.1
       dotenv: 17.4.2
       execa: 9.6.1
       fastq: 1.20.1
       gray-matter: 4.0.3
       hono: 4.13.8
-      hono-openapi: 1.3.3(hono@4.13.8)(zod@4.6.6)
+      hono-openapi: 1.3.3(hono@4.13.8)(zod@4.6.7)
       ignore: 7.0.6
       jpeg-js: 0.4.4
       json-schema: 0.4.0
@@ -2093,7 +2096,7 @@ snapshots:
       re2js: 2.8.6
       ws: 8.21.3
       xxhash-wasm: 1.1.0
-      zod: 4.6.6
+      zod: 4.6.7
     transitivePeerDependencies:
       - '@bufbuild/protobuf'
       - '@grpc/grpc-js'
@@ -2113,10 +2116,10 @@ snapshots:
       - zod-openapi
       - zod-to-json-schema
 
-  '@mastra/schema-compat@1.3.13(zod@4.6.6)':
+  '@mastra/schema-compat@1.3.13(zod@4.6.7)':
     dependencies:
       json-schema-to-zod: 2.8.1
-      zod: 4.6.6
+      zod: 4.6.7
       zod-from-json-schema: 0.5.6
 
   '@pinojs/redact@0.4.0': {}
@@ -2266,21 +2269,21 @@ snapshots:
       '@smithy/core': 3.33.3
       tslib: 2.8.1
 
-  '@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.6)':
+  '@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.7)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/json-schema': 7.0.15
       quansync: 0.2.11
     optionalDependencies:
-      zod: 4.6.6
+      zod: 4.6.7
 
-  '@standard-community/standard-openapi@0.2.10(@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.6))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.6.6)':
+  '@standard-community/standard-openapi@0.2.10(@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.7))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.6.7)':
     dependencies:
-      '@standard-community/standard-json': 0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.6)
+      '@standard-community/standard-json': 0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
       openapi-types: 12.1.3
     optionalDependencies:
-      zod: 4.6.6
+      zod: 4.6.7
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -2427,7 +2430,7 @@ snapshots:
       '@types/ws': 8.18.1
       fastify: 5.12.5
       ws: 8.21.3
-      zod: 4.6.6
+      zod: 4.6.7
     optionalDependencies:
       '@a2a-js/sdk': 1.0.1(express@5.2.1)
       express: 5.2.1
@@ -2471,7 +2474,7 @@ snapshots:
 
   character-entities@2.0.2: {}
 
-  chat@4.41.0(zod@4.6.6):
+  chat@4.41.0(zod@4.6.7):
     dependencies:
       '@workflow/serde': 4.1.0-beta.2
       mdast-util-to-string: 4.0.0
@@ -2481,7 +2484,7 @@ snapshots:
       remend: 1.3.0
       unified: 11.0.5
     optionalDependencies:
-      zod: 4.6.6
+      zod: 4.6.7
     transitivePeerDependencies:
       - supports-color
 
@@ -2750,11 +2753,11 @@ snapshots:
       function-bind: 1.1.2
     optional: true
 
-  hono-openapi@1.3.3(hono@4.13.8)(zod@4.6.6):
+  hono-openapi@1.3.3(hono@4.13.8)(zod@4.6.7):
     dependencies:
       '@hono/standard-validator': 0.4.0(@standard-schema/spec@1.1.0)(hono@4.13.8)
-      '@standard-community/standard-json': 0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.6)
-      '@standard-community/standard-openapi': 0.2.10(@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.6))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.6.6)
+      '@standard-community/standard-json': 0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.7)
+      '@standard-community/standard-openapi': 0.2.10(@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod@4.6.7))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
       '@types/json-schema': 7.0.15
       hono: 4.13.8
@@ -3549,5 +3552,7 @@ snapshots:
       zod: 4.6.6
 
   zod@4.6.6: {}
+
+  zod@4.6.7: {}
 
   zwitch@2.0.4: {}
