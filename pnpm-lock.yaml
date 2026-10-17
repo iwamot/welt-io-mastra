@@ -24,8 +24,8 @@ importers:
   examples/agent:
     dependencies:
       '@ai-sdk/amazon-bedrock':
-        specifier: 5.0.115
-        version: 5.0.115(zod@4.6.7)
+        specifier: 5.0.117
+        version: 5.0.117(zod@4.6.7)
       '@aws-sdk/credential-providers':
         specifier: 3.1152.0
         version: 3.1152.0
@@ -81,20 +81,20 @@ packages:
       express:
         optional: true
 
-  '@ai-sdk/amazon-bedrock@5.0.115':
-    resolution: {integrity: sha512-6kVu9VdRwkGIch66g0q6vY1dp4y8C8ia4i0cA76qu871igCQPWOS1B7ClGWh29cZBBLMmALaZXim6iZZSzWkpA==}
+  '@ai-sdk/amazon-bedrock@5.0.117':
+    resolution: {integrity: sha512-Az1mj8KWl2CK5EaG8yCO3ZY4dCvY0YfsYlh9avWLDM1KD0axef+zXUj1IMArtMSm8NuUw3rWZkH4Ot9hq7S8EA==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/anthropic@4.0.79':
-    resolution: {integrity: sha512-bBAmgc8IcwJDz7RkyIHaGNrN6k84oqZu6K2aYcdekYwab8PNcxvUgp/LG1S/tSU3SBoS+blFYuMjTQrIg8WHRQ==}
+  '@ai-sdk/anthropic@4.0.81':
+    resolution: {integrity: sha512-xcd2bmpJ1QvSAGtXhE/OJ1DPsCFZMfDoV49VlXdgkVBeHLgBf766l4VJUmGXq6ch+mLViE11Iy08F2g7Bi8O4A==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai@4.0.93':
-    resolution: {integrity: sha512-UUTCBDWwkNvsbukMstaT31K6wYnL73vp0X4gQL1/7W3LZlHT1wOZ6eZzlwj76s/O+QLXefWF6+ceRgPwTOX6FA==}
+  '@ai-sdk/openai@4.0.95':
+    resolution: {integrity: sha512-rx8agb3u+pvDDqvrDYrXfMJVlnlwigNcdgqbwH4oGVi/UZRMNVY+SYhGNI9ynwjmiGcl6QG/QJz73e6qaGL7jg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -111,8 +111,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@5.0.59':
-    resolution: {integrity: sha512-eaXBTkguxBFzS+KvxGRsbdkX9A7+R1g/C4jWx9mup0oSs3Cx5Mb427/byGpD2XL8SnMYT9O8LmXBmrgo+N3TJw==}
+  '@ai-sdk/provider-utils@5.0.61':
+    resolution: {integrity: sha512-Y+Z3539UXw0ctFDNepTtG23VqBQHr2A6yI2qUxvQcg75DJYgJoD2F9U2Vp5OgQjX7lxto1BLgFtKuOhzrr52vQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -129,8 +129,8 @@ packages:
     resolution: {integrity: sha512-1Jtmn36VNMOBo9CMUQrPqsR744qtqRloEiXpWCYS8ffPlhS2CrSNmoho5lPjp3R7EnkzBsGI6p51TA7fQJQZdA==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/provider@4.0.27':
-    resolution: {integrity: sha512-TtWwm6SxFiPomlMIbTQa+yhJte+w4/oCsW+wJrJzMC3MqHpAY9e5dJF1Y4HxyKt3W2Csac0KiI76Ckio11TFYw==}
+  '@ai-sdk/provider@4.0.28':
+    resolution: {integrity: sha512-6ThcmkJQXSMlBrf6mirIjUUS04Q5/kApbYTOzd5lZfYXLa1XPpnDLxP/G96/DKc00fDIUOW9S2ls0mSzb0+l9w==}
     engines: {node: '>=22'}
 
   '@aws-crypto/crc32@3.0.0':
@@ -1598,27 +1598,27 @@ snapshots:
     optionalDependencies:
       express: 5.2.1
 
-  '@ai-sdk/amazon-bedrock@5.0.115(zod@4.6.7)':
+  '@ai-sdk/amazon-bedrock@5.0.117(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/anthropic': 4.0.79(zod@4.6.7)
-      '@ai-sdk/openai': 4.0.93(zod@4.6.7)
-      '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
+      '@ai-sdk/anthropic': 4.0.81(zod@4.6.7)
+      '@ai-sdk/openai': 4.0.95(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.28
+      '@ai-sdk/provider-utils': 5.0.61(zod@4.6.7)
       '@smithy/eventstream-codec': 4.4.16
       '@smithy/util-utf8': 4.4.16
       aws4fetch: 1.0.20
       zod: 4.6.7
 
-  '@ai-sdk/anthropic@4.0.79(zod@4.6.7)':
+  '@ai-sdk/anthropic@4.0.81(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.28
+      '@ai-sdk/provider-utils': 5.0.61(zod@4.6.7)
       zod: 4.6.7
 
-  '@ai-sdk/openai@4.0.93(zod@4.6.7)':
+  '@ai-sdk/openai@4.0.95(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/provider': 4.0.27
-      '@ai-sdk/provider-utils': 5.0.59(zod@4.6.7)
+      '@ai-sdk/provider': 4.0.28
+      '@ai-sdk/provider-utils': 5.0.61(zod@4.6.7)
       zod: 4.6.7
 
   '@ai-sdk/provider-utils@4.0.40(zod@4.6.7)':
@@ -1637,9 +1637,9 @@ snapshots:
       undici: 7.30.0
       zod: 4.6.7
 
-  '@ai-sdk/provider-utils@5.0.59(zod@4.6.7)':
+  '@ai-sdk/provider-utils@5.0.61(zod@4.6.7)':
     dependencies:
-      '@ai-sdk/provider': 4.0.27
+      '@ai-sdk/provider': 4.0.28
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
@@ -1658,7 +1658,7 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/provider@4.0.27':
+  '@ai-sdk/provider@4.0.28':
     dependencies:
       json-schema: 0.4.0
 
