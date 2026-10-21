@@ -13,7 +13,7 @@
     "@aws-sdk/credential-providers": "3.1152.0",
     "@mastra/core": "1.78.0",
     "@welt-io/mastra": "workspace:*",
-    "bedrock-agentcore": "0.4.5",
+    "bedrock-agentcore": "0.4.6",
     "zod": "4.6.7"
   },
   "devDependencies": {
