@@ -3,6 +3,11 @@
 # that both sides can update.
 defaultLockfileFormat: pnpm
 
+# Resolve only versions published at least a day ago, both in aube and in the
+# pnpm that Renovate runs, and fail instead of falling back to a newer one.
+minimumReleaseAge: 1440  # 1 day
+minimumReleaseAgeStrict: true
+
 packages:
   - examples/agent
 
