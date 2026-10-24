@@ -4,12 +4,12 @@ The example agent for [Welt](https://github.com/iwamot/welt): the smallest compl
 
 ## Stack
 
-| Package | Role |
-|---------|------|
-| [Bedrock AgentCore SDK](https://github.com/aws/bedrock-agentcore-sdk-typescript) | Serves the endpoint |
-| [Mastra](https://mastra.ai/) | Runs the model and the tools |
-| [@ai-sdk/amazon-bedrock](https://ai-sdk.dev/providers/ai-sdk-providers/amazon-bedrock) | Provides the Bedrock model |
-| @welt-io/mastra | Adapts the wire to Welt |
+| Package                                                                                | Role                         |
+| -------------------------------------------------------------------------------------- | ---------------------------- |
+| [Bedrock AgentCore SDK](https://github.com/aws/bedrock-agentcore-sdk-typescript)       | Serves the endpoint          |
+| [Mastra](https://mastra.ai/)                                                           | Runs the model and the tools |
+| [@ai-sdk/amazon-bedrock](https://ai-sdk.dev/providers/ai-sdk-providers/amazon-bedrock) | Provides the Bedrock model   |
+| @welt-io/mastra                                                                        | Adapts the wire to Welt      |
 
 ## Run Locally
 
