@@ -34,23 +34,29 @@ One difference from the cloud: AgentCore Runtime gives every session its own mic
 
 ## Deploy
 
-Deploy with the [AgentCore CLI](https://github.com/aws/agentcore-cli), replacing the generated agent with this one — the CLI's only TypeScript template is the Strands one, so that is the scaffold, and the agent inside it is swapped:
+Deploy with the [AgentCore CLI](https://github.com/aws/agentcore-cli):
 
 ```sh
-agentcore create --name WeltExample --no-agent
+agentcore create --name WeltExample
 cd WeltExample
-agentcore add agent --name WeltExample --type create --build CodeZip --language TypeScript --framework Strands --model-provider Bedrock --memory none
+agentcore add runtime --name WeltExample --language typescript
 
 curl -o app/WeltExample/main.ts https://raw.githubusercontent.com/iwamot/welt-io-mastra/main/examples/agent/src/main.ts
-npm --prefix app/WeltExample uninstall @strands-agents/sdk
-npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers zod
+npm --prefix app/WeltExample install @welt-io/mastra @mastra/core @ai-sdk/amazon-bedrock @aws-sdk/credential-providers bedrock-agentcore zod
+# @mastra/core's posthog-node imports this optional peer, and the CodeZip bundle fails to resolve it when absent
+npm --prefix app/WeltExample install @opentelemetry/api
 
 agentcore deploy
 ```
 
 The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model — and `BEDROCK_REGION` at another region, to leave the model access where it already is. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
 
-The CLI has no teardown command — removing the deployment means deleting the CloudFormation stack it created, `AgentCore-WeltExample-default`.
+To remove the deployment, take the runtime out of the project and deploy the empty project, which deletes the CloudFormation stack, `AgentCore-WeltExample-default`:
+
+```sh
+agentcore remove runtime --name WeltExample
+agentcore deploy --yes
+```
 
 ## Tools
 
