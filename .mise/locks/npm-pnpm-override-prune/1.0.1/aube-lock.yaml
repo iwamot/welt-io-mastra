@@ -1,0 +1,41 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      pnpm-override-prune:
+        specifier: 1.0.1
+        version: 1.0.1
+
+packages:
+
+  pnpm-override-prune@1.0.1:
+    resolution: {integrity: sha512-Gj7V2nojDWKK0/3dRw9YpBmrtlFq9XJzl+P+p9Nn7EUdQnljKncgPayLPIl1Tv4DaDPa+l21qXUD4o4+HX+6nw==}
+    engines: {node: '>=22'}
+    hasBin: true
+
+  semver@7.8.5:
+    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+    engines: {node: '>=10'}
+    hasBin: true
+
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
+snapshots:
+
+  pnpm-override-prune@1.0.1:
+    dependencies:
+      semver: 7.8.5
+      yaml: 2.9.1
+
+  semver@7.8.5: {}
+
+  yaml@2.9.1: {}
