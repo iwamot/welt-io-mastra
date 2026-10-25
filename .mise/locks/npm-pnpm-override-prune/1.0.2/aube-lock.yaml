@@ -9,13 +9,13 @@ importers:
   .:
     dependencies:
       pnpm-override-prune:
-        specifier: 1.0.1
-        version: 1.0.1
+        specifier: 1.0.2
+        version: 1.0.2
 
 packages:
 
-  pnpm-override-prune@1.0.1:
-    resolution: {integrity: sha512-Gj7V2nojDWKK0/3dRw9YpBmrtlFq9XJzl+P+p9Nn7EUdQnljKncgPayLPIl1Tv4DaDPa+l21qXUD4o4+HX+6nw==}
+  pnpm-override-prune@1.0.2:
+    resolution: {integrity: sha512-7meN6CPmp5hshj/d2k6NhgIP7BLiodD8SHL4WqOwyb0Q+Lxb3NBLStJcWNO7q1Xr94a2RsaMJXk0BnXm/KnTJQ==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -31,7 +31,7 @@ packages:
 
 snapshots:
 
-  pnpm-override-prune@1.0.1:
+  pnpm-override-prune@1.0.2:
     dependencies:
       semver: 7.8.5
       yaml: 2.9.1
