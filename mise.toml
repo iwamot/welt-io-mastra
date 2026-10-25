@@ -6,9 +6,6 @@ lockfile = true
 minimum_release_age = "1d"
 npm.package_manager = "aube"
 
-[tool_config]
-locked = true
-
 [tools]
 biome = "2.6.2"
 node = "24.22.1"
