@@ -9,7 +9,7 @@ npm.package_manager = "aube"
 [tools]
 biome = "2.6.3"
 node = "24.22.1"
-"aqua:aubepkg/aube" = "2.8.2"
+"aqua:aubepkg/aube" = "2.8.3"
 
 [tools."npm:pnpm-override-prune"]
 version = "1.0.3"
