@@ -51,7 +51,32 @@ agentcore deploy
 
 The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model — and `BEDROCK_REGION` at another region, to leave the model access where it already is. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
 
-To remove the deployment, take the runtime out of the project and deploy the empty project, which deletes the CloudFormation stack, `AgentCore-WeltExample-default`:
+### Verify the Deployment
+
+Display the deployed Runtime ARN:
+
+```sh
+agentcore status --json
+```
+
+Use the ID after `runtime/` in that ARN as `<runtime-id>`, and its region as `<runtime-region>`. Invoke the agent directly with AgentCore CLI v1:
+
+```sh
+agentcore runtime invoke \
+  --region '<runtime-region>' \
+  --id '<runtime-id>' \
+  --session-id manual-check-0000000000000000000000 \
+  --content-type application/json \
+  --accept text/event-stream \
+  --payload '{"messages":[{"role":"user","content":[{"text":"Say hello in one sentence."}]}]}' \
+  --json
+```
+
+This sends the same `messages` envelope Welt uses, exercising the deployed agent and adapter before connecting Slack. Look for the reply text in the response body's SSE `data:` lines, where each JSON event's `data` field carries a text chunk. The invoke command also works outside the AgentCore project directory.
+
+### Remove the Deployment
+
+Take the runtime out of the project and deploy the empty project, which deletes the CloudFormation stack, `AgentCore-WeltExample-default`:
 
 ```sh
 agentcore remove runtime --name WeltExample
