@@ -1,6 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>iwamot/renovate-config#v0.23.0"],
+  "packageRules": [
+    {
+      "description": "Skip the slow vercel/ai changelog lookup for the Bedrock SDK",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@ai-sdk/amazon-bedrock"],
+      "fetchChangeLogs": "off"
+    }
+  ],
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
