@@ -7,7 +7,7 @@ minimum_release_age = "1d"
 npm.package_manager = "aube"
 
 [tools]
-biome = "2.6.3"
+biome = "2.6.4"
 node = "26.13.0"
 "aqua:aubepkg/aube" = "2.8.4"
 
