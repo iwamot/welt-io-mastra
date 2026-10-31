@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "5.0.121",
+    "@ai-sdk/amazon-bedrock": "5.0.128",
     "@aws-sdk/credential-providers": "3.1160.0",
     "@mastra/core": "1.80.0",
     "@welt-io/mastra": "workspace:*",
