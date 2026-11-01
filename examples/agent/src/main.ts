@@ -160,8 +160,9 @@ const sampleDraftReport = createTool({
       // Drafting belongs in this branch alone: Mastra re-executes the tool
       // from its start on resume, and a redraft (timestamped here to make
       // that visible) would publish something other than what the human
-      // approved. The draft outlives the pause in the map, since a resumed
-      // execution gets the answer but not the suspend payload back.
+      // approved. The draft outlives the pause in the map: the suspend payload
+      // does come back on resume, but it is the reason Welt reads, whose keys
+      // leave no room for the draft apart from the question's own text.
       const draft =
         `# ${input.topic}\n\nEverything about ${input.topic} is going well.\n\n` +
         `_Drafted at ${new Date().toISOString()}._\n`;
