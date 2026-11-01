@@ -49,7 +49,7 @@ npm --prefix app/WeltExample install @opentelemetry/api
 agentcore deploy
 ```
 
-The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model — and `BEDROCK_REGION` at another region, to leave the model access where it already is. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
+The agent defaults to Anthropic Claude Sonnet 4.6 through Bedrock's global inference profile (`global.anthropic.claude-sonnet-4-6`) — enable access for it in the Amazon Bedrock console, or point the `MODEL_ID` environment variable at another Converse model — and `BEDROCK_REGION` at another region, to leave the model access where it already is. Both go in an `--environment-variables` JSON object on `agentcore add runtime`. `agentcore status` reports the agent runtime ARN: Welt's `AGENT_ARN` points at it.
 
 ### Verify the Deployment
 

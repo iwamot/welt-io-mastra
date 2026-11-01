@@ -16,7 +16,7 @@ npm install @welt-io/mastra
 
 ## Usage
 
-`startReply` and `renderableEvents` are the wiring between Welt's payload and a Mastra agent, so a deployable is your agent plus a short handler:
+`startReply` and `renderableEvents` are the wiring between Welt's payload and a Mastra agent, so a deployable is your agent plus a short handler. Beyond the adapter, it needs `npm install bedrock-agentcore @ai-sdk/amazon-bedrock @aws-sdk/credential-providers`:
 
 ```ts
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
@@ -59,6 +59,8 @@ app.run();
 ```
 
 An agent with approval tools keeps the run ids it needs to resume; [`examples/agent`](examples/agent) shows that — a map in the entrypoint, keyed on interrupt id, and a lookup beside it that hands back the run the answers name and drops the whole stop with it.
+
+To see it in Slack, run the file (`node main.ts`). It serves on port 8080, where Welt's local mode reaches it, so follow [Welt's Quick Start](https://github.com/iwamot/welt#quick-start) with this file in place of the example agent. To deploy, follow the example's [Deploy](examples/agent#deploy) section with this file in place of the downloaded `main.ts`, then point Welt's `AGENT_ARN` at the runtime.
 
 See [`examples/agent`](examples/agent) for the full version — the smallest complete agent built on this package (text streaming, tool use, file output, file input, and human-approval tools). The sections below cover the handler and the adapters it wires in.
 
@@ -124,7 +126,7 @@ Reduces the chunks of `Agent.stream()`'s (or `Agent.resumeStream()`'s) `fullStre
 |---|---|---|
 | Text deltas | `data` | The streamed reply |
 | Tool calls and results | `current_tool_use` / `tool_result` | "Using tool" indicators (tool output stays off the wire) |
-| File parts the model produces, or a tool named in `filesFrom` returns | `file` | An uploaded file ([size limits](https://github.com/iwamot/welt/blob/main/docs/wire.md#limits)) |
+| File parts the model produces (audio included), or a tool named in `filesFrom` returns | `file` | An uploaded file ([size limits](https://github.com/iwamot/welt/blob/main/docs/wire.md#limits)) |
 | Failures | `error` | A reply failure notice |
 | Suspended tool calls | `interrupt` | Buttons and/or a text field |
 
@@ -156,7 +158,7 @@ toModelOutput: (output) => output,
 
 `ToolResultContent` is exported for that annotation: content the adapter cannot read carries no file and says nothing about it, so a typo is better caught by the compiler.
 
-Uploaded names come from the `filename`, and it is yours to pick — nothing else in the run competes for it; left off, the upload falls back to the media type (`file.csv`, `image.png`). The model sees another name on the file itself, because Mastra drops the `filename` from tool result content on the way to the model and the Bedrock provider falls back to naming the document it builds (`document-1`) — its handle on the document rather than a filename. So a tool that wants the model to use the upload name says it in the text part, as above, and the [example agent](examples/agent) adds a line to its instructions to keep the model from repeating the internal one.
+Uploaded names come from the `filename`, and it is yours to pick — nothing else in the run competes for it; left off, the upload falls back to the media type (`file.csv`, `image.png`). A file the model produces always takes the media-type name (`audio.mpeg`). The model sees another name on the file itself, because Mastra drops the `filename` from tool result content on the way to the model and the Bedrock provider falls back to naming the document it builds (`document-1`) — its handle on the document rather than a filename. So a tool that wants the model to use the upload name says it in the text part, as above, and the [example agent](examples/agent) adds a line to its instructions to keep the model from repeating the internal one.
 
 Each event carries only what Welt reads — a `current_tool_use` is the name and id behind the indicator, a `tool_result` the id and status — so tool arguments and tool output stay off the wire. An event with nothing to render is not sent at all: a text chunk the model left empty, a file that points at its bytes by URL rather than carrying them, and a file with no bytes, which Slack refuses and fails the whole reply with. The empty one leaves a [process warning](https://nodejs.org/api/process.html#event-warning) behind, naming what returned it.
 
