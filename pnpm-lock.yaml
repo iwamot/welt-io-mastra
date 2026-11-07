@@ -27,8 +27,8 @@ importers:
         specifier: 5.0.132
         version: 5.0.132(zod@4.6.7)
       '@aws-sdk/credential-providers':
-        specifier: 3.1162.0
-        version: 3.1162.0
+        specifier: 3.1163.0
+        version: 3.1163.0
       '@mastra/core':
         specifier: 1.82.0
         version: 1.82.0(zod@4.6.7)
@@ -226,8 +226,8 @@ packages:
     resolution: {integrity: sha512-O2P6CUfMP2qi8vgYB6UHYj/NYTEAAdTr2geEVdVchr3JBofK4Q6W917FiVr2sleA72R59YAXMEhrpzPwkX/xdA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-providers@3.1162.0':
-    resolution: {integrity: sha512-i1F6XYMp68lrYOXTp5Hn+rP6HYnJ2eP6DkuqUizXlecN0R0ToWnupTSoaLbtDacZAch+8OkgjfPzc9c0J4Ib+Q==}
+  '@aws-sdk/credential-providers@3.1163.0':
+    resolution: {integrity: sha512-6uJXEB3jOjnkD0YIAeKQyeT5dULLHwtNEv+1Ke351i7DhgEczKQucrCrQWFxDn8LBF2dwj6z+jDAl+dh7yqsrg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/eventstream-codec@3.370.0':
@@ -1625,7 +1625,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/credential-providers@3.1162.0':
+  '@aws-sdk/credential-providers@3.1163.0':
     dependencies:
       '@aws-sdk/core': 3.980.0
       '@aws-sdk/credential-provider-cognito-identity': 3.972.80
@@ -2120,7 +2120,7 @@ snapshots:
       '@aws-crypto/sha256-js': 5.2.0
       '@aws-sdk/client-bedrock-agentcore': 3.1156.0
       '@aws-sdk/client-bedrock-agentcore-control': 3.1156.0
-      '@aws-sdk/credential-providers': 3.1162.0
+      '@aws-sdk/credential-providers': 3.1163.0
       '@aws-sdk/protocol-http': 3.370.0
       '@aws-sdk/signature-v4': 3.370.0
       '@aws-sdk/types': 3.975.0
