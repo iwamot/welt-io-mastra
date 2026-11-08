@@ -892,7 +892,7 @@ checksum = "sha256:dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b591
 url = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-x64.zip"
 
 [[tools."npm:pnpm-override-prune"]]
-version = "1.0.3"
-aube = { path = ".mise/locks/npm-pnpm-override-prune/1.0.3", digest = "sha256:3a80226ee54223195feac6cb15b74ac487e1af16018d72e06852e2c53c874bda" }
+version = "1.0.4"
+aube = { path = ".mise/locks/npm-pnpm-override-prune/1.0.4", digest = "sha256:26d021daacf2441c1a04cbab378b6172adf992aecf9ae86fd759699f34485b55" }
 backend = "npm:pnpm-override-prune"
-specifiers = ["1.0.3"]
+specifiers = ["1.0.4"]

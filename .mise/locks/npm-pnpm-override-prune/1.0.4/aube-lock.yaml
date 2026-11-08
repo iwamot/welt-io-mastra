@@ -9,18 +9,18 @@ importers:
   .:
     dependencies:
       pnpm-override-prune:
-        specifier: 1.0.3
-        version: 1.0.3
+        specifier: 1.0.4
+        version: 1.0.4
 
 packages:
 
-  pnpm-override-prune@1.0.3:
-    resolution: {integrity: sha512-KwVTM3PmScRkkBakneLMALgNmQCN7VEsmPwohzsA5LWF/U8Y7x5N20/RFGYA89qzS0LP/NOZ7LdILWl4Kenvfg==}
+  pnpm-override-prune@1.0.4:
+    resolution: {integrity: sha512-9QYBV0GkwhrHh69XN19+rS61iwkKufZ3KKCODHQNbWRX4r/T//bZps0V4XoDvhG+qwuTUYahBTulTc7/qJXC6g==}
     engines: {node: '>=22'}
     hasBin: true
 
-  semver@7.8.5:
-    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+  semver@7.8.6:
+    resolution: {integrity: sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -31,11 +31,11 @@ packages:
 
 snapshots:
 
-  pnpm-override-prune@1.0.3:
+  pnpm-override-prune@1.0.4:
     dependencies:
-      semver: 7.8.5
+      semver: 7.8.6
       yaml: 2.9.1
 
-  semver@7.8.5: {}
+  semver@7.8.6: {}
 
   yaml@2.9.1: {}
