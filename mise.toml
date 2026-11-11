@@ -12,7 +12,7 @@ locked = true
 [tools]
 biome = "2.6.6"
 node = "26.13.0"
-"aqua:aubepkg/aube" = "2.9.0"
+"aqua:aubepkg/aube" = "2.10.0"
 
 [tools."npm:pnpm-override-prune"]
 version = "1.0.4"
