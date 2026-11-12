@@ -10,7 +10,7 @@ npm.package_manager = "aube"
 locked = true
 
 [tools]
-biome = "2.6.6"
+biome = "2.6.7"
 node = "26.13.1"
 "aqua:aubepkg/aube" = "2.10.0"
 
