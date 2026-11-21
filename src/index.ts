@@ -897,10 +897,16 @@ function isJsonValue(value: unknown): value is JsonValue {
   return false;
 }
 
-/** One agent stream: what `Agent.stream()` and `Agent.resumeStream()` return. */
-export interface AgentStream {
+/**
+ * One agent stream: what `Agent.stream()` and `Agent.resumeStream()` return.
+ *
+ * `OUTPUT` is the agent's structured output type, as in `ChunkType`. Mastra
+ * carries it in some chunk payloads, so a stream of one output type is not
+ * a stream of another — hence a parameter rather than a fixed type.
+ */
+export interface AgentStream<OUTPUT = unknown> {
   runId: string;
-  fullStream: AsyncIterable<ChunkType<unknown>>;
+  fullStream: AsyncIterable<ChunkType<OUTPUT>>;
 }
 
 /**
@@ -913,16 +919,16 @@ export interface AgentStream {
  * parameters Mastra's own overloads require beyond what the handler
  * passes.
  */
-export interface StreamingAgent {
+export interface StreamingAgent<OUTPUT = unknown> {
   stream(
     messages: AIV5Type.ModelMessage[],
     ...rest: never[]
-  ): Promise<AgentStream>;
+  ): Promise<AgentStream<OUTPUT>>;
   resumeStream(
     answer: JsonValue,
     options: { runId: string; toolCallId: string },
     ...rest: never[]
-  ): Promise<AgentStream>;
+  ): Promise<AgentStream<OUTPUT>>;
 }
 
 /** What `startReply` takes beside the agent and the payload. */
@@ -980,11 +986,11 @@ type WeltPayload =
  * @throws {Error} If the payload carries answers and no `runId` came with
  *   them — there is no run to resume.
  */
-export async function* startReply(
-  agent: StreamingAgent,
+export async function* startReply<OUTPUT = unknown>(
+  agent: StreamingAgent<OUTPUT>,
   payload: unknown,
   options?: StartReplyOptions,
-): AsyncGenerator<AgentStream, void, undefined> {
+): AsyncGenerator<AgentStream<OUTPUT>, void, undefined> {
   const envelope = payload as WeltPayload;
   if ("interrupt_responses" in envelope) {
     const runId = options?.runId;
