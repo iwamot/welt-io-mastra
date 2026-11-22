@@ -4,10 +4,12 @@ import type { ChunkType } from "@mastra/core/stream";
 import { ChunkFrom } from "@mastra/core/stream";
 import type {
   InterruptEvent,
+  RenderableEvent,
   RenderableEventsOptions,
   ToolResultContent,
 } from "../src/index.ts";
 import { type interruptReason, renderableEvents } from "../src/index.ts";
+import { sequences } from "./sequences.ts";
 
 /** The reason shape an interrupt event carries, which is what it builds. */
 type InterruptReason = ReturnType<typeof interruptReason>;
@@ -84,6 +86,131 @@ async function warningsOf(run: () => Promise<void>): Promise<string[]> {
   return collected;
 }
 
+test("preserves stream order, repetitions, and public fields", async () => {
+  const reason = { message: "Deploy?", options: [{ value: "y" }] };
+  const cases: [ChunkType, RenderableEvent[]][] = [
+    [chunk("text-delta", { id: "1", text: "Hello" }), [{ data: "Hello" }]],
+    [
+      chunk("text-delta", { id: "2", text: "日本語\n " }),
+      [{ data: "日本語\n " }],
+    ],
+    [chunk("text-delta", { id: "1", text: "" }), []],
+    [chunk("reasoning-delta", { id: "1", text: "hmm" }), []],
+    [
+      chunk("tool-call", { toolCallId: "t1", toolName: "my_tool" }),
+      [{ current_tool_use: { toolUseId: "t1", name: "my_tool" } }],
+    ],
+    [
+      chunk("tool-result", {
+        toolCallId: "t1",
+        toolName: "my_tool",
+        result: "big output",
+      }),
+      [{ tool_result: { toolUseId: "t1", status: "success" } }],
+    ],
+    [
+      chunk("tool-result", {
+        toolCallId: "t2",
+        toolName: "my_tool",
+        result: "boom",
+        isError: true,
+      }),
+      [{ tool_result: { toolUseId: "t2", status: "error" } }],
+    ],
+    [
+      chunk("tool-error", {
+        toolCallId: "t2",
+        toolName: "my_tool",
+        error: new Error("boom"),
+      }),
+      [{ tool_result: { toolUseId: "t2", status: "error" } }],
+    ],
+    [
+      chunk("tool-call-suspended", {
+        toolCallId: "t1",
+        toolName: "deploy",
+        suspendPayload: reason,
+        args: {},
+        resumeSchema: "{}",
+      }),
+      [{ interrupt: { id: "t1", name: "deploy", reason } }],
+    ],
+  ];
+  for (const selected of sequences(cases, 3))
+    assert.deepEqual(
+      await rendered(selected.map(([event]) => event)),
+      selected.flatMap(([, output]) => output),
+    );
+});
+
+test("preserves each file's content and publishes only the selected tools", async () => {
+  for (const bytes of [
+    new Uint8Array([104, 105]),
+    new Uint8Array([0]),
+    Uint8Array.from({ length: 256 }, (_, i) => i),
+  ]) {
+    const data = Buffer.from(bytes).toString("base64");
+    for (const payload of [
+      { data, base64: data, mimeType: "image/png" },
+      { data: bytes, mimeType: "image/png" },
+    ])
+      assert.deepEqual(await rendered([chunk("file", payload)]), [
+        { file: { name: "image.png", bytes: data } },
+      ]);
+    const result = content([
+      { type: "text", text: "Created sample.csv." },
+      { type: "media", data, mediaType: "text/csv", filename: "sample.csv" },
+      {
+        type: "media",
+        data: Buffer.from([...bytes, 1]).toString("base64"),
+        mediaType: "application/pdf",
+        filename: "report.pdf",
+      },
+    ]);
+    for (const filesFrom of [
+      undefined,
+      [],
+      ["maker"],
+      ["reader"],
+      ["maker", "reader"],
+    ]) {
+      const events = [
+        chunk("tool-result", {
+          toolCallId: "t2",
+          toolName: "reader",
+          result,
+          isError: true,
+        }),
+        chunk("tool-result", { toolCallId: "t1", toolName: "maker", result }),
+      ];
+      const files: RenderableEvent[] = [
+        { file: { name: "sample.csv", bytes: data } },
+        {
+          file: {
+            name: "report.pdf",
+            bytes: Buffer.from([...bytes, 1]).toString("base64"),
+          },
+        },
+      ];
+      const expected: RenderableEvent[] = [
+        { tool_result: { toolUseId: "t2", status: "error" } },
+        ...(filesFrom?.includes("reader") ? files : []),
+        { tool_result: { toolUseId: "t1", status: "success" } },
+        ...(filesFrom?.includes("maker") ? files : []),
+      ];
+      assert.deepEqual(
+        await rendered(
+          events,
+          filesFrom === undefined
+            ? undefined
+            : { filesFrom: new Set(filesFrom) },
+        ),
+        expected,
+      );
+    }
+  }
+});
+
 describe("renderableEvents", () => {
   test("drops the chunks Welt does not render", async () => {
     const chunks = [
@@ -95,58 +222,6 @@ describe("renderableEvents", () => {
       chunk("abort", {}),
     ];
     assert.deepEqual(await rendered(chunks), []);
-  });
-
-  test("yields text chunks", async () => {
-    const chunks = [chunk("text-delta", { id: "1", text: "Hello" })];
-    assert.deepEqual(await rendered(chunks), [{ data: "Hello" }]);
-  });
-
-  test("drops an empty text delta, which Welt cannot render", async () => {
-    const chunks = [chunk("text-delta", { id: "1", text: "" })];
-    assert.deepEqual(await rendered(chunks), []);
-  });
-
-  test("slims tool calls to the tool-use indicator", async () => {
-    const chunks = [
-      chunk("tool-call", { toolCallId: "t1", toolName: "my_tool" }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { current_tool_use: { toolUseId: "t1", name: "my_tool" } },
-    ]);
-  });
-
-  test("slims tool results to the status", async () => {
-    const chunks = [
-      chunk("tool-result", {
-        toolCallId: "t1",
-        toolName: "my_tool",
-        result: "big output",
-      }),
-      chunk("tool-result", {
-        toolCallId: "t2",
-        toolName: "my_tool",
-        result: "boom",
-        isError: true,
-      }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { tool_result: { toolUseId: "t1", status: "success" } },
-      { tool_result: { toolUseId: "t2", status: "error" } },
-    ]);
-  });
-
-  test("maps tool errors to an error status", async () => {
-    const chunks = [
-      chunk("tool-error", {
-        toolCallId: "t1",
-        toolName: "my_tool",
-        error: new Error("boom"),
-      }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { tool_result: { toolUseId: "t1", status: "error" } },
-    ]);
   });
 
   test("closes a rejected call as an error", async () => {
@@ -163,31 +238,6 @@ describe("renderableEvents", () => {
       { current_tool_use: { toolUseId: "t1", name: "my_tool" } },
       { tool_result: { toolUseId: "t1", status: "error" } },
     ]);
-  });
-
-  test("yields the files of a tool named in filesFrom", async () => {
-    const chunks = [
-      chunk("tool-result", {
-        toolCallId: "t1",
-        toolName: "create_sample_file",
-        result: content([
-          { type: "text", text: "Created sample.csv." },
-          {
-            type: "media",
-            data: "YSxi",
-            mediaType: "text/csv",
-            filename: "sample.csv",
-          },
-        ]),
-      }),
-    ];
-    assert.deepEqual(
-      await rendered(chunks, { filesFrom: ["create_sample_file"] }),
-      [
-        { tool_result: { toolUseId: "t1", status: "success" } },
-        { file: { name: "sample.csv", bytes: "YSxi" } },
-      ],
-    );
   });
 
   test("keeps the files of a tool left out of filesFrom off the wire", async () => {
@@ -365,27 +415,6 @@ describe("renderableEvents", () => {
     ]);
   });
 
-  test("yields a model-generated file with a synthesized name", async () => {
-    const chunks = [
-      chunk("file", { data: "aGk=", base64: "aGk=", mimeType: "image/png" }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { file: { name: "image.png", bytes: "aGk=" } },
-    ]);
-  });
-
-  test("base64-encodes binary file data", async () => {
-    const chunks = [
-      chunk("file", {
-        data: new TextEncoder().encode("hi"),
-        mimeType: "image/png",
-      }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { file: { name: "image.png", bytes: "aGk=" } },
-    ]);
-  });
-
   const nameByMimeType: [string, string][] = [
     ["video/quicktime", "video.mov"],
     ["video/3gpp", "video.3gp"],
@@ -549,25 +578,6 @@ describe("renderableEvents", () => {
     assert.deepEqual(await rendered(chunks), [
       { error: "PII detected" },
       { error: "the reply was blocked by an output processor" },
-    ]);
-  });
-
-  test("preserves stream order", async () => {
-    const chunks = [
-      chunk("text-delta", { id: "1", text: "Let me check. " }),
-      chunk("tool-call", { toolCallId: "t1", toolName: "current_time" }),
-      chunk("tool-result", {
-        toolCallId: "t1",
-        toolName: "current_time",
-        result: "noon",
-      }),
-      chunk("text-delta", { id: "2", text: "It is noon." }),
-    ];
-    assert.deepEqual(await rendered(chunks), [
-      { data: "Let me check. " },
-      { current_tool_use: { toolUseId: "t1", name: "current_time" } },
-      { tool_result: { toolUseId: "t1", status: "success" } },
-      { data: "It is noon." },
     ]);
   });
 });

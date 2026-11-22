@@ -1,34 +1,38 @@
 import assert from "node:assert/strict";
-import { describe, test } from "node:test";
+import { test } from "node:test";
 import type { InterruptAnswer } from "../src/index.ts";
 import { decodeInterruptResponses } from "../src/index.ts";
+import { sequences } from "./sequences.ts";
 
-describe("decodeInterruptResponses", () => {
-  test("decodes answers in payload order", () => {
-    const responses: Record<string, InterruptAnswer> = {
-      "tool-call-1": { value: "Approve", source: "option" },
-      "tool-call-2": { value: "do it differently", source: "input" },
-    };
-    assert.deepEqual(decodeInterruptResponses(responses), [
-      { toolCallId: "tool-call-1", answer: "Approve" },
-      { toolCallId: "tool-call-2", answer: "do it differently" },
-    ]);
-  });
-
-  test("carries an answer on as the value it was given", () => {
-    const responses: Record<string, InterruptAnswer> = {
-      "tool-call-1": { value: false, source: "option" },
-      "tool-call-2": { value: null, source: "option" },
-      "tool-call-3": { value: { decision: "hold" }, source: "option" },
-    };
-
-    assert.deepEqual(
-      decodeInterruptResponses(responses).map((entry) => entry.answer),
-      [false, null, { decision: "hold" }],
-    );
-  });
-
-  test("decodes no answers into no resume inputs", () => {
-    assert.deepEqual(decodeInterruptResponses({}), []);
-  });
+test("preserves every answer's id, JSON value, and payload order", () => {
+  const values: InterruptAnswer["value"][] = [
+    true,
+    false,
+    null,
+    0,
+    42,
+    "",
+    "do it differently",
+    ["a"],
+    { decision: "hold" },
+  ];
+  for (const chosen of sequences(values, 3)) {
+    for (const source of ["option", "input"] as const) {
+      const responses: Record<string, InterruptAnswer> = Object.fromEntries(
+        chosen.map((value, i) => [
+          "interrupt-" + (chosen.length - i),
+          { value, source: typeof value === "string" ? source : "option" },
+        ]),
+      );
+      const before = structuredClone(responses);
+      assert.deepEqual(
+        decodeInterruptResponses(responses),
+        chosen.map((value, i) => ({
+          toolCallId: "interrupt-" + (chosen.length - i),
+          answer: value,
+        })),
+      );
+      assert.deepEqual(responses, before);
+    }
+  }
 });

@@ -30,101 +30,52 @@ function rejectsValue(build: () => unknown, reason: RegExp) {
   });
 }
 
-describe("interruptReason", () => {
-  test("builds a message with options", () => {
-    assert.deepEqual(
-      interruptReason({ message: "Deploy?", options: [{ value: "y" }] }),
-      {
-        message: "Deploy?",
-        options: [{ value: "y" }],
-      },
-    );
-  });
-
-  test("builds a message with an input field", () => {
-    assert.deepEqual(interruptReason({ message: "Name?", input: {} }), {
-      message: "Name?",
-      input: {},
-    });
-  });
-
-  test("builds a message with both widgets", () => {
-    assert.deepEqual(
-      interruptReason({
-        message: "Deploy?",
-        options: [
-          { value: "y", label: "Deploy", style: "primary" },
-          { value: "n", label: "Cancel" },
-        ],
-        input: { label: "Or type your answer", multiline: true },
-      }),
-      {
-        message: "Deploy?",
-        options: [
-          { value: "y", label: "Deploy", style: "primary" },
-          { value: "n", label: "Cancel" },
-        ],
-        input: { label: "Or type your answer", multiline: true },
-      },
-    );
-  });
-
-  const jsonValues: JsonValue[] = [
-    true,
-    false,
-    null,
-    42,
-    "",
-    ["a"],
-    { d: "h" },
+test("preserves all requested widget combinations and their JSON values", () => {
+  const decisions: (DecisionSpec | undefined)[] = [
+    undefined,
+    {},
+    { label: "Deploy" },
+    { label: "Cancel", style: "primary" },
+    { style: "danger" },
   ];
-  for (const value of jsonValues) {
-    test(`carries the option value ${JSON.stringify(value)}`, () => {
-      const reason = interruptReason({
-        message: "m",
-        options: [{ value, label: "Pick" }],
-      });
-      assert.deepEqual(reason.options, [{ value, label: "Pick" }]);
-    });
-  }
+  const inputs: (InputSpec | undefined)[] = [
+    undefined,
+    {},
+    { label: "City" },
+    { label: "Draft", multiline: true },
+    { multiline: false },
+  ];
+  const values: JsonValue[] = [true, false, null, 0, 42, "", ["a"], { d: "h" }];
+  const choices: (OptionSpec[] | undefined)[] = [
+    undefined,
+    values.map((value) => ({ value, label: "Pick" })),
+    [{ value: "y" }, { value: "n", label: "Cancel" }],
+    [
+      { value: "y", label: "Deploy", style: "primary" },
+      { value: "n", style: "danger" },
+    ],
+  ];
+  for (const message of ["Deploy?", "日本語\n質問"])
+    for (const approve of decisions)
+      for (const reject of decisions)
+        for (const input of inputs)
+          for (const options of choices) {
+            const spec: ReasonSpec = {
+              message,
+              ...(approve === undefined ? {} : { approve }),
+              ...(reject === undefined ? {} : { reject }),
+              ...(input === undefined ? {} : { input }),
+              ...(options === undefined ? {} : { options }),
+            };
+            const before = structuredClone(spec);
+            const reason = interruptReason(spec);
+            assert.deepEqual(reason, spec);
+            if (options !== undefined) assert.notEqual(reason.options, options);
+            assert.deepEqual(spec, before);
+          }
+});
 
-  test("builds a message alone, answered by Welt's default buttons", () => {
-    assert.deepEqual(interruptReason({ message: "Generating an image. OK?" }), {
-      message: "Generating an image. OK?",
-    });
-  });
-
-  test("copies the options it was handed", () => {
-    const options: OptionSpec[] = [{ value: "y" }];
-    const reason = interruptReason({ message: "m", options });
-    assert.notEqual(reason.options, options);
-    assert.deepEqual(reason.options, options);
-  });
-
-  for (const style of ["primary", "danger"] as const) {
-    test(`accepts the ${style} style`, () => {
-      assert.deepEqual(
-        interruptReason({ message: "m", options: [{ value: "v", style }] }),
-        {
-          message: "m",
-          options: [{ value: "v", style }],
-        },
-      );
-    });
-  }
-
-  for (const multiline of [true, false]) {
-    test(`accepts multiline ${multiline}`, () => {
-      assert.deepEqual(
-        interruptReason({ message: "m", input: { multiline } }),
-        {
-          message: "m",
-          input: { multiline },
-        },
-      );
-    });
-  }
-
+describe("interruptReason", () => {
   // Welt's own rendering caps — how many buttons one Slack actions block
   // holds, how long a value or a message may be — are Welt's to enforce.
   // A copy of them here would be four copies of a number only Welt knows.
@@ -312,45 +263,6 @@ describe("interruptReason", () => {
 });
 
 describe("interruptReason decisions", () => {
-  test("leaves the approve and reject wording to Welt", () => {
-    assert.deepEqual(
-      interruptReason({ message: "Deploy?", approve: {}, reject: {} }),
-      { message: "Deploy?", approve: {}, reject: {} },
-    );
-  });
-
-  test("carries a label and a style", () => {
-    assert.deepEqual(
-      interruptReason({
-        message: "Deploy?",
-        approve: { label: "Deploy" },
-        reject: { label: "Cancel", style: "primary" },
-      }),
-      {
-        message: "Deploy?",
-        approve: { label: "Deploy" },
-        reject: { label: "Cancel", style: "primary" },
-      },
-    );
-  });
-
-  test("combines with options and a field", () => {
-    assert.deepEqual(
-      interruptReason({
-        message: "Deploy?",
-        approve: {},
-        options: [{ value: "later", label: "Ask me later" }],
-        input: { label: "Or say why" },
-      }),
-      {
-        message: "Deploy?",
-        approve: {},
-        options: [{ value: "later", label: "Ask me later" }],
-        input: { label: "Or say why" },
-      },
-    );
-  });
-
   test("refuses an empty label", () => {
     rejectsValue(
       () => interruptReason({ message: "m", approve: { label: "" } }),
