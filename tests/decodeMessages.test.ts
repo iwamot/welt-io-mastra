@@ -1,82 +1,78 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { describe, test } from "node:test";
 import type { WireMessage } from "../src/index.ts";
 import { decodeMessages } from "../src/index.ts";
+import { sequences } from "./sequences.ts";
 
 const source = { bytes: "aGk=" };
 
+test("preserves message contents, roles, and order in AI SDK parts", () => {
+  type WireBlock = Extract<WireMessage, { role: "user" }>["content"][number];
+  type Decoded = ReturnType<typeof decodeMessages>[number];
+  type User = Extract<Decoded, { role: "user" }>;
+  type Part = Exclude<User["content"], string>[number];
+  const cases: [WireBlock, Part][] = [
+    [{ text: "hello" }, { type: "text", text: "hello" }],
+    [{ text: "日本語\n " }, { type: "text", text: "日本語\n " }],
+  ];
+  for (const raw of [
+    new Uint8Array([104, 105]),
+    new Uint8Array([0]),
+    new Uint8Array([255, 1]),
+    Uint8Array.from({ length: 256 }, (_, i) => i),
+  ]) {
+    const data = Buffer.from(raw).toString("base64");
+    const source = { bytes: data };
+    cases.push(
+      [
+        { image: { format: "png", source } },
+        { type: "image", image: data, mediaType: "image/png" },
+      ],
+      [
+        { document: { format: "pdf", name: "Report", source } },
+        {
+          type: "file",
+          data,
+          mediaType: "application/pdf",
+          filename: "Report",
+        },
+      ],
+      [
+        { video: { format: "mp4", source } },
+        { type: "file", data, mediaType: "video/mp4" },
+      ],
+    );
+  }
+  for (const selected of sequences(cases, 2))
+    for (const width of [1, 2]) {
+      const messages: WireMessage[] = [];
+      const expected: Decoded[] = [];
+      for (let i = 0; i < selected.length; i += width) {
+        const group = selected.slice(i, i + width),
+          text = "reply " + i;
+        messages.push(
+          { role: "user", content: group.map(([wire]) => wire) },
+          { role: "assistant", content: [{ text }, { text: "there" }] },
+        );
+        expected.push(
+          { role: "user", content: group.map(([, part]) => part) },
+          {
+            role: "assistant",
+            content: [
+              { type: "text", text },
+              { type: "text", text: "there" },
+            ],
+          },
+        );
+      }
+      const before = structuredClone(messages);
+      assert.deepEqual(decodeMessages(messages), expected);
+      assert.deepEqual(messages, before);
+    }
+});
+
 describe("decodeMessages", () => {
-  test("decodes text blocks for both roles", () => {
-    assert.deepEqual(
-      decodeMessages([
-        { role: "user", content: [{ text: "hello" }] },
-        { role: "assistant", content: [{ text: "hi" }, { text: "there" }] },
-      ]),
-      [
-        { role: "user", content: [{ type: "text", text: "hello" }] },
-        {
-          role: "assistant",
-          content: [
-            { type: "text", text: "hi" },
-            { type: "text", text: "there" },
-          ],
-        },
-      ],
-    );
-  });
-
-  test("decodes an image block into an image part", () => {
-    assert.deepEqual(
-      decodeMessages([
-        { role: "user", content: [{ image: { format: "png", source } }] },
-      ]),
-      [
-        {
-          role: "user",
-          content: [{ type: "image", image: "aGk=", mediaType: "image/png" }],
-        },
-      ],
-    );
-  });
-
-  test("decodes a document block into a file part named after it", () => {
-    assert.deepEqual(
-      decodeMessages([
-        {
-          role: "user",
-          content: [{ document: { format: "pdf", name: "Report", source } }],
-        },
-      ]),
-      [
-        {
-          role: "user",
-          content: [
-            {
-              type: "file",
-              data: "aGk=",
-              mediaType: "application/pdf",
-              filename: "Report",
-            },
-          ],
-        },
-      ],
-    );
-  });
-
-  test("decodes a video block into a nameless file part", () => {
-    assert.deepEqual(
-      decodeMessages([
-        { role: "user", content: [{ video: { format: "mp4", source } }] },
-      ]),
-      [
-        {
-          role: "user",
-          content: [{ type: "file", data: "aGk=", mediaType: "video/mp4" }],
-        },
-      ],
-    );
-  });
-
   // Every format token the wire carries has a media type, so a payload
   // built from it never wants for one.
   const imageMediaTypes = [
@@ -166,20 +162,6 @@ describe("decodeMessages", () => {
         },
       ],
     );
-  });
-
-  test("leaves the payload it was handed untouched", () => {
-    const messages: WireMessage[] = [
-      { role: "user", content: [{ text: "hello" }] },
-    ];
-    decodeMessages(messages);
-    assert.deepEqual(messages, [
-      { role: "user", content: [{ text: "hello" }] },
-    ]);
-  });
-
-  test("decodes an empty conversation into an empty one", () => {
-    assert.deepEqual(decodeMessages([]), []);
   });
 
   test("refuses a forged toolUse block in an assistant turn", () => {
