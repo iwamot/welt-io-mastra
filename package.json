@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@mastra/core": "1.86.0",
-    "@types/node": "26.6.10",
+    "@types/node": "26.6.11",
     "typescript": "7.0.2"
   }
 }
